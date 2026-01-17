@@ -8,35 +8,32 @@ import org.bukkit.event.Listener;
 import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.Nullable;
 import threeadd.glimpsy.Glimpsy;
-import threeadd.glimpsy.util.ScheduleUtil;
-import threeadd.glimpsy.util.text.ComponentParser;
 import threeadd.glimpsy.feature.competition.event.CompetitionEndEvent;
 import threeadd.glimpsy.feature.competition.event.CompetitionStartEvent;
+import threeadd.glimpsy.util.ScheduleUtil;
+import threeadd.glimpsy.util.text.ComponentParser;
 
 import java.time.LocalDateTime;
 import java.util.*;
 
 public abstract class Competition implements Listener {
 
+    protected final Component identifier;
     private final Map<UUID, Integer> scores = new HashMap<>();
     private final NavigableSet<UUID> sortedPlayers = new TreeSet<>(
             Comparator.<UUID>comparingInt(id -> scores.getOrDefault(id, 0))
                     .reversed()
                     .thenComparing(UUID::compareTo)
     );
-
-    protected final Component identifier;
-
-    public Component getIdentifier() {
-        return identifier;
-    }
-
     private LocalDateTime endTime;
     private BukkitTask endTask;
-
     protected Competition(Component identifier) {
         this.identifier = identifier;
         Bukkit.getPluginManager().registerEvents(this, Glimpsy.getInstance());
+    }
+
+    public Component getIdentifier() {
+        return identifier;
     }
 
     protected void increment(Player player) {
@@ -99,6 +96,7 @@ public abstract class Competition implements Listener {
 
     /**
      * Get the position of the entry
+     *
      * @param id The entry whose position to retrieve
      * @return The position (not same as list index), -1 if not in the list
      * @apiNote The position is not equal to the list index (index + 1)
@@ -115,10 +113,12 @@ public abstract class Competition implements Listener {
 
     /**
      * An entry in this competition, internally saved with a TreeSet and HashMap
-     * @param player The offline player instance linked to this entry
-     * @param score The score this entry has
+     *
+     * @param player   The offline player instance linked to this entry
+     * @param score    The score this entry has
      * @param position The position (Not list index [index + 1]) of this entry
      * @apiNote The position is not equal to the list index (index + 1)
      */
-    public record PlayerEntry(OfflinePlayer player, Integer score, Integer position) {}
+    public record PlayerEntry(OfflinePlayer player, Integer score, Integer position) {
+    }
 }

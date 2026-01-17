@@ -22,16 +22,6 @@ public class TNTTrailListener implements Listener {
     private static final ParticleBuilder BROKEN_PARTICLE = Particle.CLOUD.builder()
             .extra(0d)
             .offset(0.5, 0.5, 0.5);
-
-    @EventHandler
-    public void onExplode(EntityExplodeEvent event) {
-        if (!event.getEntity().getType().equals(EntityType.TNT))
-            return;
-        event.setCancelled(true);
-
-        explode(event.getLocation(), TNT_TRAIL_EXTENSION);
-    }
-
     private static final List<BlockFace> neighbours = Arrays.stream(BlockFace.values()).toList(); // U can change this to make it work directionally
 
     public static void explode(Location location, int blocksAffected) {
@@ -119,5 +109,14 @@ public class TNTTrailListener implements Listener {
             case BEDROCK, BARRIER -> false;
             default -> true;
         };
+    }
+
+    @EventHandler
+    public void onExplode(EntityExplodeEvent event) {
+        if (!event.getEntity().getType().equals(EntityType.TNT))
+            return;
+        event.setCancelled(true);
+
+        explode(event.getLocation(), TNT_TRAIL_EXTENSION);
     }
 }

@@ -25,6 +25,23 @@ public class LuckBottleListener implements Listener {
             Material.TROPICAL_FISH, 0.8
     );
 
+    private static boolean isLuckApplicable(ItemStack item) {
+        return luckMap.containsKey(item.getType());
+    }
+
+    @SuppressWarnings("UnstableApiUsage")
+    private static boolean isWaterBottle(ItemStack item) {
+        if (!item.getType().equals(Material.POTION)
+                || !item.hasData(DataComponentTypes.POTION_CONTENTS))
+            return false;
+
+        PotionContents contents = item.getData(DataComponentTypes.POTION_CONTENTS);
+        if (contents == null || contents.potion() == null)
+            throw new IllegalStateException("Found data but can't extract " + item);
+
+        return contents.potion().equals(PotionType.WATER);
+    }
+
     @EventHandler
     public void onClick(InventoryClickEvent event) {
         ItemStack clickedItem = event.getCurrentItem();
@@ -52,22 +69,5 @@ public class LuckBottleListener implements Listener {
                 .build());
         Sound sound = Sound.sound(Key.key("minecraft:block.brewing_stand.brew"), Sound.Source.AMBIENT, 1, 1);
         event.getView().getPlayer().playSound(sound, Sound.Emitter.self());
-    }
-
-    private static boolean isLuckApplicable(ItemStack item) {
-        return luckMap.containsKey(item.getType());
-    }
-
-    @SuppressWarnings("UnstableApiUsage")
-    private static boolean isWaterBottle(ItemStack item) {
-        if (!item.getType().equals(Material.POTION)
-                || !item.hasData(DataComponentTypes.POTION_CONTENTS))
-            return false;
-
-        PotionContents contents = item.getData(DataComponentTypes.POTION_CONTENTS);
-        if (contents == null || contents.potion() == null)
-            throw new IllegalStateException("Found data but can't extract " + item);
-
-        return contents.potion().equals(PotionType.WATER);
     }
 }

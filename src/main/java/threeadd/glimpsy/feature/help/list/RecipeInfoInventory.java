@@ -22,9 +22,9 @@ public class RecipeInfoInventory extends CustomInventory {
 
     public RecipeInfoInventory(Player viewer, CustomRecipe customRecipe) {
         super(Rows.FIVE, customRecipe.createRecipe().getResult()
-                .effectiveName().appendSpace()
-                .append(Component.text("Recipe"))
-                .color(NamedTextColor.DARK_GRAY),
+                        .effectiveName().appendSpace()
+                        .append(Component.text("Recipe"))
+                        .color(NamedTextColor.DARK_GRAY),
                 viewer);
 
         setTransferSlot(Rows.FIVE.getTotalSlots() - 9,
@@ -45,6 +45,20 @@ public class RecipeInfoInventory extends CustomInventory {
         }
 
         startCyclingSlots();
+    }
+
+    private static List<ItemStack> getItemStacksFromChoice(RecipeChoice choice) {
+        if (choice instanceof RecipeChoice.ExactChoice exactChoice) {
+            return exactChoice.getChoices();
+        }
+
+        if (choice instanceof RecipeChoice.MaterialChoice materialChoice) {
+            return materialChoice.getChoices().stream()
+                    .map(ItemStack::of)
+                    .toList();
+        }
+
+        throw new IllegalStateException("Couldn't eval recipe choice instance " + choice);
     }
 
     private void startCyclingSlots() {
@@ -153,19 +167,5 @@ public class RecipeInfoInventory extends CustomInventory {
 
         cyclingSlots.put(slotIndex, options);
         setSlot(slotIndex, options.getFirst());
-    }
-
-    private static List<ItemStack> getItemStacksFromChoice(RecipeChoice choice) {
-        if (choice instanceof RecipeChoice.ExactChoice exactChoice) {
-            return exactChoice.getChoices();
-        }
-
-        if (choice instanceof RecipeChoice.MaterialChoice materialChoice) {
-            return materialChoice.getChoices().stream()
-                    .map(ItemStack::of)
-                    .toList();
-        }
-
-        throw new IllegalStateException("Couldn't eval recipe choice instance " + choice);
     }
 }

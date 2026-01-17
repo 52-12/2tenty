@@ -9,12 +9,12 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import threeadd.glimpsy.util.inventory.ItemBuilder;
-import threeadd.glimpsy.util.inventory.ListInventory;
-import threeadd.glimpsy.util.text.ComponentParser;
 import threeadd.glimpsy.feature.help.HelpListInventory;
 import threeadd.glimpsy.feature.help.article.Article;
 import threeadd.glimpsy.feature.help.article.ArticleRegistry;
+import threeadd.glimpsy.util.inventory.ItemBuilder;
+import threeadd.glimpsy.util.inventory.ListInventory;
+import threeadd.glimpsy.util.text.ComponentParser;
 
 import java.util.function.Consumer;
 

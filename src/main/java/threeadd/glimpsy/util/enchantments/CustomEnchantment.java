@@ -18,12 +18,17 @@ import java.util.List;
 public abstract class CustomEnchantment implements Documentable {
 
     public abstract Key createKey();
+
     public abstract Component createDescription();
+
     public abstract CustomEnchantmentInfo createInfo();
 
     public abstract List<Enchantment> createIncompatibleEnchantments();
+
     public abstract List<TypedKey<ItemType>> createSupportedItems();
+
     public abstract EquipmentSlotGroup createActiveSlots();
+
     public abstract List<TagKey<Enchantment>> createTags();
 
     public @NotNull Enchantment toBukkitEnchantment() {

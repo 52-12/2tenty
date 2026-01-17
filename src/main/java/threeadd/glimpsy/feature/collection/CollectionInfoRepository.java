@@ -60,7 +60,8 @@ public class CollectionInfoRepository extends Repository<CollectionInfo> {
 
         List<Material> collectedMaterials = new Gson().fromJson(
                 json,
-                new TypeToken<List<Material>>(){}.getType()
+                new TypeToken<List<Material>>() {
+                }.getType()
         );
 
         return new CollectionInfo(ownerId, collectedMaterials);

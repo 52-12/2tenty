@@ -10,8 +10,8 @@ import java.io.File;
 
 public class ArticleRegistry extends Registry<Article> {
 
-    private static final Logger log = LoggerFactory.getLogger(ArticleRegistry.class);
     public static final ArticleRegistry INSTANCE = new ArticleRegistry();
+    private static final Logger log = LoggerFactory.getLogger(ArticleRegistry.class);
 
     private ArticleRegistry() {
         File articlesFolder = new File(Glimpsy.getInstance().getDataFolder(), "articles");

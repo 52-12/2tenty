@@ -5,8 +5,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.inventory.ItemStack;
-import threeadd.glimpsy.util.enchantments.CustomEnchantmentRegistry;
 import threeadd.glimpsy.feature.simple.TNTTrailListener;
+import threeadd.glimpsy.util.enchantments.CustomEnchantmentRegistry;
 
 public class ExplosiveListener implements Listener {
 

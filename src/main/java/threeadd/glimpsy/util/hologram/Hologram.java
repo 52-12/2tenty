@@ -49,7 +49,7 @@ public class Hologram {
         HologramLine line = addLine(text);
 
         BukkitTask task = ScheduleUtil.scheduleSync(() ->
-                removeLine(lines.indexOf(line)),
+                        removeLine(lines.indexOf(line)),
                 (int) duration,
                 unit);
 
@@ -58,10 +58,10 @@ public class Hologram {
     }
 
     public HologramLine addFadingLine(Component base,
-                              TextColor start,
-                              TextColor end,
-                              long duration,
-                              ScheduleUtil.Unit unit) {
+                                      TextColor start,
+                                      TextColor end,
+                                      long duration,
+                                      ScheduleUtil.Unit unit) {
 
         long totalTicks = unit.toTicks(duration);
 

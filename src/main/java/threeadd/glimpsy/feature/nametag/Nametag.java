@@ -56,10 +56,10 @@ public class Nametag extends Hologram {
             getLine(1).setText(health);
 
         Component name = Component.text(player.getName())
-                        .color(TextColor.color(0xD4D4D4));
+                .color(TextColor.color(0xD4D4D4));
 
         Component ping = Component.text(player.getPing() + "ms")
-                        .color(TextColor.color(0xFFE08F));
+                .color(TextColor.color(0xFFE08F));
 
         getRoot().text(Component.textOfChildren(
                 name,

@@ -11,6 +11,16 @@ import threeadd.glimpsy.util.text.ComponentParser;
 
 public class HelpCommand extends CustomCommand {
 
+    @SuppressWarnings("SameReturnValue")
+    private static int run(CommandContext<CommandSourceStack> ctx) {
+        Player player = getPlayer(ctx);
+        if (player == null) return SUCCESS;
+
+        player.openInventory(new HelpListInventory(player).getInventory());
+
+        return SUCCESS;
+    }
+
     @Override
     public Component createUsage() {
         return ComponentParser.parseRichString("Get a list of all server features and general information");
@@ -20,15 +30,5 @@ public class HelpCommand extends CustomCommand {
     public LiteralArgumentBuilder<CommandSourceStack> create() {
         return Commands.literal("help")
                 .executes(HelpCommand::run);
-    }
-
-    @SuppressWarnings("SameReturnValue")
-    private static int run(CommandContext<CommandSourceStack> ctx) {
-        Player player = getPlayer(ctx);
-        if (player == null) return SUCCESS;
-
-        player.openInventory(new HelpListInventory(player).getInventory());
-
-        return SUCCESS;
     }
 }

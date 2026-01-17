@@ -14,7 +14,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import threeadd.glimpsy.Glimpsy;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -81,6 +83,7 @@ public abstract class CustomInventory implements InventoryHolder {
 
     /**
      * Change the title of this CustomInventory
+     *
      * @param newTitle The new Component to apply to the title of this CustomInventory
      * @apiNote Because bukkit title's of Bukkit Inventories are immutable,
      * this will create a new Inventory instance whilst copying all contents and open the new Inventory

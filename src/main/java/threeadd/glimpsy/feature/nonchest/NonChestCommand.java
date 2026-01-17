@@ -13,6 +13,16 @@ import java.util.List;
 
 public class NonChestCommand extends CustomCommand {
 
+    @SuppressWarnings("SameReturnValue")
+    private static int run(CommandContext<CommandSourceStack> ctx) {
+        Player player = getPlayer(ctx);
+        if (player == null) return SUCCESS;
+
+        player.openInventory(NonChestManager.getNonChest().getInventory());
+
+        return SUCCESS;
+    }
+
     @Override
     public Component createUsage() {
         return ComponentParser.parseRichString("View the server's nonchest (publicly accessible chest)");
@@ -27,15 +37,5 @@ public class NonChestCommand extends CustomCommand {
     @Override
     public List<String> getAliases() {
         return List.of("publicchest", "communitychest");
-    }
-
-    @SuppressWarnings("SameReturnValue")
-    private static int run(CommandContext<CommandSourceStack> ctx) {
-        Player player = getPlayer(ctx);
-        if (player == null) return SUCCESS;
-
-        player.openInventory(NonChestManager.getNonChest().getInventory());
-
-        return SUCCESS;
     }
 }

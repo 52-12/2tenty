@@ -8,10 +8,13 @@ import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.function.Consumer;
 
-public abstract class ListInventory<T> extends CustomInventory{
+public abstract class ListInventory<T> extends CustomInventory {
 
     private static final ItemStack PREVIOUS_PAGE_ITEM = new ItemBuilder(Material.ARROW)
             .withName(Component.text("Previous Page"))
@@ -45,6 +48,7 @@ public abstract class ListInventory<T> extends CustomInventory{
     }
 
     protected abstract @NotNull ItemStack mapToItem(@NotNull T object);
+
     protected abstract @Nullable Consumer<InventoryClickEvent> mapClick(@NotNull T object);
 
     public void updateInventory() {

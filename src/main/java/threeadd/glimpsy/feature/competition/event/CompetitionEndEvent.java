@@ -17,6 +17,10 @@ public class CompetitionEndEvent extends Event {
         this.winningEntry = winningEntry;
     }
 
+    public static HandlerList getHandlerList() {
+        return list;
+    }
+
     public Competition getCompetition() {
         return competition;
     }
@@ -27,10 +31,6 @@ public class CompetitionEndEvent extends Event {
 
     @Override
     public @NotNull HandlerList getHandlers() {
-        return list;
-    }
-
-    public static HandlerList getHandlerList() {
         return list;
     }
 }

@@ -11,6 +11,16 @@ import threeadd.glimpsy.util.text.ComponentParser;
 
 public class RandomItemCommand extends CustomCommand {
 
+    @SuppressWarnings("SameReturnValue")
+    private static int run(CommandContext<CommandSourceStack> ctx) {
+        Player player = CustomCommand.getPlayer(ctx);
+        if (player == null) return SUCCESS;
+
+        player.openInventory(new RandomItemToggleInventory(player).getInventory());
+
+        return SUCCESS;
+    }
+
     @Override
     public Component createUsage() {
         return ComponentParser.parseRichString("View all states of your current item toggles and edit them");
@@ -20,15 +30,5 @@ public class RandomItemCommand extends CustomCommand {
     public LiteralArgumentBuilder<CommandSourceStack> create() {
         return Commands.literal("toggleitems")
                 .executes(RandomItemCommand::run);
-    }
-
-    @SuppressWarnings("SameReturnValue")
-    private static int run(CommandContext<CommandSourceStack> ctx) {
-        Player player = CustomCommand.getPlayer(ctx);
-        if (player == null) return SUCCESS;
-
-        player.openInventory(new RandomItemToggleInventory(player).getInventory());
-
-        return SUCCESS;
     }
 }

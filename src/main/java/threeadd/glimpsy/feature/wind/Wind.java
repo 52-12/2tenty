@@ -16,6 +16,17 @@ public enum Wind {
 
     private static final String[] ARROWS = {"⬆", "⬈", "➡", "⬊", "⬇", "⬋", "⬅", "⬉"};
 
+    private static int yawToIndex(float yaw) {
+        yaw = (yaw % 360 + 360) % 360;
+
+        return Math.round((yaw + 180) / 45f) % 8;
+    }
+
+    public static Wind getRandom() {
+        Wind[] values = Wind.values();
+        return values[ThreadLocalRandom.current().nextInt(values.length)];
+    }
+
     public String getRelativeArrow(Player player) {
         float yaw = player.getYaw();
 
@@ -26,18 +37,7 @@ public enum Wind {
         return ARROWS[relative];
     }
 
-    private static int yawToIndex(float yaw) {
-        yaw = (yaw % 360 + 360) % 360;
-
-        return Math.round((yaw + 180) / 45f) % 8;
-    }
-
     public boolean isInWind(Player player) {
         return getRelativeArrow(player).equals("⬆");
-    }
-
-    public static Wind getRandom() {
-        Wind[] values = Wind.values();
-        return values[ThreadLocalRandom.current().nextInt(values.length)];
     }
 }

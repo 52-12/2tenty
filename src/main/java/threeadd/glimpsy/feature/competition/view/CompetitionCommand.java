@@ -13,6 +13,15 @@ import java.util.List;
 
 public class CompetitionCommand extends CustomCommand {
 
+    @SuppressWarnings("SameReturnValue")
+    private static int run(CommandContext<CommandSourceStack> ctx) {
+        Player player = getPlayer(ctx);
+        if (player == null) return SUCCESS;
+
+        player.openInventory(new CompetitionInfoInventory(player).getInventory());
+        return SUCCESS;
+    }
+
     @Override
     public Component createUsage() {
         return ComponentParser.parseRichString("Used to view all information about competitions");
@@ -27,14 +36,5 @@ public class CompetitionCommand extends CustomCommand {
     @Override
     public List<String> getAliases() {
         return List.of("comp");
-    }
-
-    @SuppressWarnings("SameReturnValue")
-    private static int run(CommandContext<CommandSourceStack> ctx) {
-        Player player = getPlayer(ctx);
-        if (player == null) return SUCCESS;
-
-        player.openInventory(new CompetitionInfoInventory(player).getInventory());
-        return SUCCESS;
     }
 }

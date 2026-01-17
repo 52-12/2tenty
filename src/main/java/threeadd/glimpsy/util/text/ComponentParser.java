@@ -6,7 +6,6 @@ import net.kyori.adventure.text.format.Style;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Location;
-import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalDateTime;
@@ -109,7 +108,7 @@ public class ComponentParser {
         double distanceBetweenPlayers = locationA.distance(locationB);
 
         TextColor nearColor = TextColor.color(0xFFF8EB);
-        TextColor farColor  = TextColor.color(0x4B4B4B);
+        TextColor farColor = TextColor.color(0x4B4B4B);
 
         double maxFadeDistance = 300D;
         double fadeAmount = Math.min(distanceBetweenPlayers / maxFadeDistance, 1.0);

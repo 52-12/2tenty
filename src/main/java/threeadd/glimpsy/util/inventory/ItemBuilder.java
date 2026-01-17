@@ -25,10 +25,20 @@ public class ItemBuilder {
 
     /**
      * Create a builder from a Material.
+     *
      * @param material The Material
      */
     public ItemBuilder(Material material) {
         this.item = ItemStack.of(material);
+    }
+
+    /**
+     * Create a builder from a previous ItemStack (clones the ItemStack)
+     *
+     * @param item The ItemStack
+     */
+    public ItemBuilder(@NotNull ItemStack item) {
+        this.item = item.clone();
     }
 
     public ItemStack getItem() {
@@ -36,15 +46,8 @@ public class ItemBuilder {
     }
 
     /**
-     * Create a builder from a previous ItemStack (clones the ItemStack)
-     * @param item The ItemStack
-     */
-    public ItemBuilder(@NotNull ItemStack item) {
-        this.item = item.clone();
-    }
-
-    /**
      * Change the display name of the ItemStack in the ItemBuilder
+     *
      * @param name The new display name
      * @return The ItemBuilder with this new ItemStack
      * @see ItemMeta#displayName(Component)
@@ -58,6 +61,7 @@ public class ItemBuilder {
 
     /**
      * Change the lore of the ItemStack in the ItemBuilder
+     *
      * @param lore The lines of lore you want this item to have
      * @return The ItemBuilder with this new ItemStack
      * @see ItemBuilder#withLore(List)
@@ -68,6 +72,7 @@ public class ItemBuilder {
 
     /**
      * Change the lore of the ItemStack in the ItemBuilder
+     *
      * @param lore The lines of lore you want this item to have
      * @return The ItemBuilder with this new ItemStack
      * @see ItemMeta#lore()
@@ -98,6 +103,7 @@ public class ItemBuilder {
 
     /**
      * Change the item amount of the ItemStack in the ItemBuilder
+     *
      * @param itemAmount the new item amount
      * @return The ItemBuilder with this new ItemStack
      * @see ItemStack#setAmount(int)
@@ -109,6 +115,7 @@ public class ItemBuilder {
 
     /**
      * Change or apply an enchantment to the ItemStack in the ItemBuilder
+     *
      * @param enchant The enchantment to chance/apply
      * @return The ItemBuilder with this new ItemStack
      * @see ItemMeta#addEnchant(Enchantment, int, boolean)
@@ -120,6 +127,7 @@ public class ItemBuilder {
 
     /**
      * Change the all enchantments of the ItemStack in the ItemBuilder
+     *
      * @param enchants A map from Enchantment to level
      * @return The ItemBuilder with this new ItemStack
      * @see ItemBuilder#withEnchant(Enchantment, int)
@@ -131,6 +139,7 @@ public class ItemBuilder {
 
     /**
      * Change the CustomModelDataComponent of the item contained within this ItemBuilder.
+     *
      * @see ItemBuilder#withItemMeta(Consumer)
      */
     public ItemBuilder withItemModel(String modelId) {
@@ -141,6 +150,7 @@ public class ItemBuilder {
 
     /**
      * Change the {@link ItemMeta} of an item, internal methods also use this to change lore, name, etc.
+     *
      * @param itemMeta The consumer which u alter the ItemMeta with.
      * @return The ItemBuilder with the changed item meta.
      * @see ItemBuilder#withItemMeta(Class, Consumer)
@@ -156,10 +166,10 @@ public class ItemBuilder {
     }
 
     /**
-     * @param clazz The {@link ItemMeta} class to use (ease of use for example {@link org.bukkit.inventory.meta.SkullMeta})
+     * @param clazz        The {@link ItemMeta} class to use (ease of use for example {@link org.bukkit.inventory.meta.SkullMeta})
      * @param metaConsumer The consumer which u use to alter the {@link T}.
+     * @param <T>          The type of {@link ItemMeta} to use
      * @return The ItemBuilder with the changed item inside.
-     * @param <T> The type of {@link ItemMeta} to use
      */
     public <T extends ItemMeta> ItemBuilder withItemMeta(Class<T> clazz, Consumer<T> metaConsumer) {
         ItemMeta itemMeta = item.getItemMeta();
@@ -173,6 +183,7 @@ public class ItemBuilder {
 
     /**
      * Sets the unbreakable state if the item inside the builder
+     *
      * @param state The new unbreakable state
      * @return The ItemBuilder with the updated state
      * @see ItemMeta#setUnbreakable(boolean)
@@ -184,6 +195,7 @@ public class ItemBuilder {
 
     /**
      * Sets the enchanted glint state if the item inside the builder
+     *
      * @param state The new enchanted glint state
      * @return The ItemBuilder with the updated state
      * @see ItemMeta#setEnchantmentGlintOverride(Boolean)
@@ -195,6 +207,7 @@ public class ItemBuilder {
 
     /**
      * Apply {@link ItemFlag}s to the item inside the builder
+     *
      * @param flags The flags to apply
      * @return The ItemBuilder with the updated flags
      * @see ItemFlag
@@ -206,6 +219,7 @@ public class ItemBuilder {
 
     /**
      * Change the material of the item inside this builder
+     *
      * @param material The new material for the ite,
      * @return The ItemBuilder with the updated material
      * @apiNote This will change the ItemStack instance as they material is immutable
@@ -218,6 +232,7 @@ public class ItemBuilder {
 
     /**
      * Build the ItemStack in this ItemBuilder
+     *
      * @return The ItemStack
      */
     public ItemStack build() {

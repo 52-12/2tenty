@@ -13,14 +13,6 @@ public class MapResetManager extends Manager {
     private static final Logger log = LoggerFactory.getLogger(MapResetManager.class);
     private static MapResetTime time;
 
-    @Override
-    public void enable() {
-        time = MapResetRepository.getInstance().loadSync().orElse(new MapResetTime());
-        log.info("Loaded Map Reset time at {}", time.getTime().toString());
-
-        schedule();
-    }
-
     private static void schedule() {
         int ticks = getTicksUntil(time.getTime());
 
@@ -37,6 +29,14 @@ public class MapResetManager extends Manager {
 
         long seconds = Duration.between(now, future).getSeconds();
         return Math.toIntExact(seconds * 20);
+    }
+
+    @Override
+    public void enable() {
+        time = MapResetRepository.getInstance().loadSync().orElse(new MapResetTime());
+        log.info("Loaded Map Reset time at {}", time.getTime().toString());
+
+        schedule();
     }
 
     @Override

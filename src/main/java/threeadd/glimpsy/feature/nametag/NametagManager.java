@@ -23,6 +23,27 @@ public class NametagManager extends ListeningManager {
 
     private static Team TEAM;
 
+    private static void createTeam() {
+        NametagManager.TEAM = Bukkit.getScoreboardManager().getMainScoreboard().registerNewTeam(TEAM_NAME);
+        NametagManager.TEAM.setOption(Team.Option.COLLISION_RULE, Team.OptionStatus.NEVER);
+        NametagManager.TEAM.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.NEVER);
+    }
+
+    private static void createNametag(Player player) {
+        nametags.put(player, new Nametag(player));
+    }
+
+    private static void removeNametag(Player player) {
+        nametags.get(player).remove();
+        nametags.remove(player);
+
+        player.playerListName();
+    }
+
+    public static Nametag getNametag(Player player) {
+        return nametags.get(player);
+    }
+
     @Override
     public void onEnable() {
         NametagManager.TEAM = Bukkit.getScoreboardManager().getMainScoreboard().getTeam(TEAM_NAME);
@@ -31,17 +52,11 @@ public class NametagManager extends ListeningManager {
         log.info("Created nametag Team");
 
         ScheduleUtil.scheduleSync(() ->
-                Bukkit.getOnlinePlayers().forEach(player ->
-                        getNametag(player).update()),
+                        Bukkit.getOnlinePlayers().forEach(player ->
+                                getNametag(player).update()),
                 0,
                 1,
                 ScheduleUtil.Unit.SECOND);
-    }
-
-    private static void createTeam() {
-        NametagManager.TEAM = Bukkit.getScoreboardManager().getMainScoreboard().registerNewTeam(TEAM_NAME);
-        NametagManager.TEAM.setOption(Team.Option.COLLISION_RULE, Team.OptionStatus.NEVER);
-        NametagManager.TEAM.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.NEVER);
     }
 
     @Override
@@ -58,23 +73,8 @@ public class NametagManager extends ListeningManager {
         createNametag(player);
     }
 
-    private static void createNametag(Player player) {
-        nametags.put(player, new Nametag(player));
-    }
-
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         removeNametag(event.getPlayer());
-    }
-
-    private static void removeNametag(Player player) {
-        nametags.get(player).remove();
-        nametags.remove(player);
-
-        player.playerListName();
-    }
-
-    public static Nametag getNametag(Player player) {
-        return nametags.get(player);
     }
 }

@@ -33,14 +33,6 @@ public class RandomItemManager extends ListeningManager {
     private static final Logger log = LoggerFactory.getLogger(RandomItemManager.class);
     private BukkitTask task;
 
-    @Override
-    public void onEnable() {
-        task = ScheduleUtil.scheduleSync(this::tick,
-                0,
-                5,
-                ScheduleUtil.Unit.SECOND);
-    }
-
     private static Material getRandomItem() {
         int totalWeight = RANDOM_ITEMS.values().stream().mapToInt(Integer::intValue).sum();
         int random = ThreadLocalRandom.current().nextInt(totalWeight);
@@ -53,6 +45,18 @@ public class RandomItemManager extends ListeningManager {
         }
 
         throw new IllegalStateException("Couldn't get random item");
+    }
+
+    public static @Nullable RandomItemsInfo getInfo(Player player) {
+        return randomItemInfoMap.get(player.getUniqueId());
+    }
+
+    @Override
+    public void onEnable() {
+        task = ScheduleUtil.scheduleSync(this::tick,
+                0,
+                5,
+                ScheduleUtil.Unit.SECOND);
     }
 
     private void tick() {
@@ -91,10 +95,6 @@ public class RandomItemManager extends ListeningManager {
 
             RandomItemsRepository.getInstance().saveSync(info);
         }
-    }
-
-    public static @Nullable RandomItemsInfo getInfo(Player player) {
-        return randomItemInfoMap.get(player.getUniqueId());
     }
 
     @EventHandler

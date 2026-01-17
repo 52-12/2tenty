@@ -10,9 +10,8 @@ import java.util.function.Consumer;
 public class HologramBuilder {
 
     private final Location baseLocation;
-    private double spacing = 0.25;
-
     private final List<Component> pendingLines = new ArrayList<>();
+    private double spacing = 0.25;
     private Consumer<HologramLine> lineModifier = null;
 
     public HologramBuilder(Location baseLocation) {

@@ -17,7 +17,8 @@ public class SerializationUtil {
 
     public static ItemStack itemStackFromJson(String json) {
         Gson gson = new Gson();
-        Type type = new TypeToken<Map<String, Object>>() {}.getType();
+        Type type = new TypeToken<Map<String, Object>>() {
+        }.getType();
         Map<String, Object> map = gson.fromJson(json, type);
         return ItemStack.deserialize(map);
     }

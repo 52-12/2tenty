@@ -11,6 +11,21 @@ import threeadd.glimpsy.util.text.ComponentParser;
 
 public class WindCommand extends CustomCommand {
 
+    @SuppressWarnings("SameReturnValue")
+    private static int run(CommandContext<CommandSourceStack> ctx) {
+        Player player = getPlayer(ctx);
+        if (player == null) return SUCCESS;
+
+        player.sendMessage(
+                ComponentParser.parseRichString("The wind is currently " +
+                                WindManager.getCurrentWind() + " (")
+                        .append(WindManager.getWindArrow(player))
+                        .append(ComponentParser.parseRichString(")"))
+        );
+
+        return SUCCESS;
+    }
+
     @Override
     public Component createUsage() {
         return ComponentParser.parseRichString("See what the wind is, relative to your position");
@@ -20,20 +35,5 @@ public class WindCommand extends CustomCommand {
     public LiteralArgumentBuilder<CommandSourceStack> create() {
         return Commands.literal("wind")
                 .executes(WindCommand::run);
-    }
-
-    @SuppressWarnings("SameReturnValue")
-    private static int run(CommandContext<CommandSourceStack> ctx) {
-        Player player = getPlayer(ctx);
-        if (player == null) return SUCCESS;
-
-        player.sendMessage(
-                ComponentParser.parseRichString("The wind is currently " +
-                        WindManager.getCurrentWind() + " (")
-                        .append(WindManager.getWindArrow(player))
-                        .append(ComponentParser.parseRichString(")"))
-        );
-
-        return SUCCESS;
     }
 }

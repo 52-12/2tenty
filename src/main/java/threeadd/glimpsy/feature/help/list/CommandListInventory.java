@@ -9,8 +9,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import threeadd.glimpsy.feature.help.HelpListInventory;
-import threeadd.glimpsy.util.command.CustomCommandRegistry;
 import threeadd.glimpsy.util.command.CustomCommand;
+import threeadd.glimpsy.util.command.CustomCommandRegistry;
 import threeadd.glimpsy.util.inventory.ItemBuilder;
 import threeadd.glimpsy.util.text.ComponentParser;
 

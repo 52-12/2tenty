@@ -26,6 +26,14 @@ public class CollectionManager extends ListeningManager {
     private static final Map<UUID, CollectionInfo> collectionsInfoMap = new ConcurrentHashMap<>();
     private static final Logger log = LoggerFactory.getLogger(CollectionManager.class);
 
+    public static CollectionInfo getCollectionInfo(Player player) {
+        return collectionsInfoMap.get(player.getUniqueId());
+    }
+
+    public static int getCollectionPoints(Player player) {
+        return collectionsInfoMap.get(player.getUniqueId()).getCollected().size();
+    }
+
     @Override
     public void disable() {
         for (Player player : Bukkit.getOnlinePlayers()) {
@@ -67,13 +75,5 @@ public class CollectionManager extends ListeningManager {
         }
 
         CollectionInfoRepository.getInstance().saveAsync(info).thenRun(() -> log.info("Saved collected items of {}", id));
-    }
-
-    public static CollectionInfo getCollectionInfo(Player player) {
-        return collectionsInfoMap.get(player.getUniqueId());
-    }
-
-    public static int getCollectionPoints(Player player) {
-        return collectionsInfoMap.get(player.getUniqueId()).getCollected().size();
     }
 }

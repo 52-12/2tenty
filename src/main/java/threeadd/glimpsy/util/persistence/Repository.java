@@ -5,7 +5,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import threeadd.glimpsy.Glimpsy;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
@@ -40,7 +43,7 @@ public abstract class Repository<T> {
                 }
             }
         } catch (SQLException e) {
-             log.error("Failed to query table for ", e);
+            log.error("Failed to query table for ", e);
         }
         return Optional.empty();
     }

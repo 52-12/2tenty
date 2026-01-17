@@ -8,14 +8,14 @@ import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import threeadd.glimpsy.util.command.CustomCommandRegistry;
 import threeadd.glimpsy.util.command.CustomCommand;
+import threeadd.glimpsy.util.command.CustomCommandRegistry;
 import threeadd.glimpsy.util.listener.ListenerRegistry;
 import threeadd.glimpsy.util.manager.Manager;
 import threeadd.glimpsy.util.manager.ManagerRegistry;
+import threeadd.glimpsy.util.persistence.DataBase;
 import threeadd.glimpsy.util.recipes.CustomRecipe;
 import threeadd.glimpsy.util.recipes.CustomRecipeRegistry;
-import threeadd.glimpsy.util.persistence.DataBase;
 
 import java.util.List;
 
@@ -24,6 +24,14 @@ public final class Glimpsy extends JavaPlugin {
     private static final Logger log = LoggerFactory.getLogger(Glimpsy.class);
     private static Glimpsy instance;
     private static DataBase dataBase;
+
+    public static Glimpsy getInstance() {
+        return instance;
+    }
+
+    public static DataBase getDataBase() {
+        return dataBase;
+    }
 
     @Override
     public void onLoad() {
@@ -98,13 +106,5 @@ public final class Glimpsy extends JavaPlugin {
 
         log.info("Successfully connected to the database");
         return true; // Success
-    }
-
-    public static Glimpsy getInstance() {
-        return instance;
-    }
-
-    public static DataBase getDataBase() {
-        return dataBase;
     }
 }

@@ -12,15 +12,14 @@ import java.util.Optional;
 public class MapResetRepository extends Repository<MapResetTime> {
 
     private final static MapResetRepository instance = new MapResetRepository();
-
-    public static MapResetRepository getInstance() {
-        return instance;
-    }
-
     private final RowMapper<MapResetTime> MAPPER = rs -> new MapResetTime(
             rs.getString("schedule_key"),
             rs.getTimestamp("timestamp").toLocalDateTime()
     );
+
+    public static MapResetRepository getInstance() {
+        return instance;
+    }
 
     @Override
     protected void createTable(Connection conn) throws SQLException {

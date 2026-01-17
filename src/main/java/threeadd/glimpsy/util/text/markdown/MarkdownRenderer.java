@@ -69,14 +69,12 @@ public class MarkdownRenderer {
             finalComponent = MM.deserialize(convertedLine)
                     .decorate(TextDecoration.BOLD).decorate(TextDecoration.UNDERLINED);
             return Component.newline().append(finalComponent).append(Component.newline());
-        }
-        else if (trimmed.startsWith("## ")) {
+        } else if (trimmed.startsWith("## ")) {
             convertedLine = convertInlineMarkdownToMiniMessage(trimmed.substring(3));
             finalComponent = MM.deserialize(convertedLine)
                     .decorate(TextDecoration.BOLD);
             return Component.newline().append(finalComponent);
-        }
-        else if (trimmed.startsWith("### ")) {
+        } else if (trimmed.startsWith("### ")) {
             convertedLine = convertInlineMarkdownToMiniMessage(trimmed.substring(4));
             return MM.deserialize(convertedLine).decorate(TextDecoration.BOLD);
         }

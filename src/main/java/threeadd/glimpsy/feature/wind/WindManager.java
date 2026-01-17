@@ -12,24 +12,6 @@ public class WindManager extends Manager {
 
     private static Wind currentWind = Wind.getRandom();
 
-    @Override
-    public void enable() {
-
-        ScheduleUtil.scheduleSync(() -> {
-            WindManager.currentWind = Wind.getRandom();
-
-            for (Player player : Bukkit.getOnlinePlayers()) {
-                player.sendMessage(ComponentParser.parseRichString(
-                        "The wind has changed to " +
-                                WindManager.currentWind + " (")
-                        .append(WindManager.getWindArrow(player))
-                        .append(ComponentParser.parseRichString(")"))
-                );
-            }
-        }, 0, 15, ScheduleUtil.Unit.MINUTE);
-
-    }
-
     public static Component getWindArrow(Player player) {
         Component directionComponent = Component.text(currentWind.getRelativeArrow(player))
                 .color(TextColor.color(0xC4C4C4));
@@ -42,5 +24,23 @@ public class WindManager extends Manager {
 
     public static Wind getCurrentWind() {
         return currentWind;
+    }
+
+    @Override
+    public void enable() {
+
+        ScheduleUtil.scheduleSync(() -> {
+            WindManager.currentWind = Wind.getRandom();
+
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                player.sendMessage(ComponentParser.parseRichString(
+                                "The wind has changed to " +
+                                        WindManager.currentWind + " (")
+                        .append(WindManager.getWindArrow(player))
+                        .append(ComponentParser.parseRichString(")"))
+                );
+            }
+        }, 0, 15, ScheduleUtil.Unit.MINUTE);
+
     }
 }

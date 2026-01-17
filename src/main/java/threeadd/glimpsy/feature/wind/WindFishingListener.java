@@ -20,17 +20,6 @@ public class WindFishingListener implements Listener {
     private static final NamespacedKey WIND_LURE_KEY = Objects.requireNonNull(NamespacedKey.fromString("glimpsy:wind_lure"));
     private static final Logger log = LoggerFactory.getLogger(WindFishingListener.class);
 
-    @EventHandler
-    public void onFish(PlayerFishEvent event) {
-
-        if (event.getState().equals(PlayerFishEvent.State.FISHING))
-            handleFishing(event);
-        else if (event.getState().equals(PlayerFishEvent.State.CAUGHT_FISH)
-                || event.getState().equals(PlayerFishEvent.State.REEL_IN))
-
-            handleFailed(event);
-    }
-
     private static void handleFishing(PlayerFishEvent event) {
         Player player = event.getPlayer();
         Wind currentWind = WindManager.getCurrentWind();
@@ -81,5 +70,16 @@ public class WindFishingListener implements Listener {
             throw new IllegalStateException("No hand in this fish event " + event);
 
         return player.getEquipment().getItem(hand);
+    }
+
+    @EventHandler
+    public void onFish(PlayerFishEvent event) {
+
+        if (event.getState().equals(PlayerFishEvent.State.FISHING))
+            handleFishing(event);
+        else if (event.getState().equals(PlayerFishEvent.State.CAUGHT_FISH)
+                || event.getState().equals(PlayerFishEvent.State.REEL_IN))
+
+            handleFailed(event);
     }
 }

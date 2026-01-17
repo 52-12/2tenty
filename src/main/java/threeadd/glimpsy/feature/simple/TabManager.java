@@ -41,6 +41,52 @@ public class TabManager extends ListeningManager {
 
     private final Map<UUID, User> userMap = new ConcurrentHashMap<>();
 
+    private static Component createHeader() {
+        return Component.newline()
+                .append(PADDING)
+                .append(Component.text("GLIMPSY")
+                        .decorate(TextDecoration.BOLD)
+                        .color(TextColor.color(0x2881C6)))
+                .append(PADDING).appendNewline()
+                .append(Component.text("by 3add")
+                        .color(TextColor.color(0xC4C4C4)))
+                .appendNewline();
+    }
+
+    private static Component createFooter(double tps, int playerCount) {
+        String formattedTps = formatTps(tps);
+        String players = String.valueOf(playerCount);
+
+        TextColor labelColor = TextColor.color(0xBCBCBC);
+        TextColor valueColor = TextColor.color(0x79ADD6);
+        TextColor urlColor = TextColor.color(0x9F9F9F);
+
+        Component statusLine = Component.empty()
+                .append(Component.text("TPS ").color(labelColor))
+                .append(Component.text(formattedTps).color(valueColor))
+                .append(Component.text("   Players ").color(labelColor))
+                .append(Component.text(players).color(valueColor));
+
+        Component url = Component.text("Glimpsy.MineHut.gg")
+                .color(urlColor);
+
+        return Component.newline()
+                .append(statusLine)
+                .appendNewline()
+                .append(url)
+                .appendNewline();
+    }
+
+    private static String formatTps(double tpsValue) {
+        String formattedTps = String.format(Locale.US, "%.2f", tpsValue);
+
+        if (formattedTps.endsWith(".00")) {
+            return formattedTps.substring(0, formattedTps.length() - 3);
+        }
+
+        return formattedTps;
+    }
+
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
@@ -53,20 +99,12 @@ public class TabManager extends ListeningManager {
         userMap.remove(player.getUniqueId());
     }
 
-    // async safe way of representing a player on tab
-    private record PlayerSnapshot(
-            UUID uuid,
-            UserProfile profile,
-            Location location,
-            int ping,
-            GameMode gameMode,
-            String name
-    ) {}
-
     @Override
     public void onEnable() {
         ScheduleUtil.scheduleSync(this::tickTabList, 0, 1, ScheduleUtil.Unit.SECOND);
     }
+
+    // Header and Footer
 
     private void tickTabList() {
         Collection<? extends Player> onlinePlayers = Bukkit.getOnlinePlayers();
@@ -146,51 +184,14 @@ public class TabManager extends ListeningManager {
         }
     }
 
-    // Header and Footer
-
-    private static Component createHeader() {
-        return Component.newline()
-                .append(PADDING)
-                .append(Component.text("GLIMPSY")
-                        .decorate(TextDecoration.BOLD)
-                        .color(TextColor.color(0x2881C6)))
-                .append(PADDING).appendNewline()
-                .append(Component.text("by 3add")
-                        .color(TextColor.color(0xC4C4C4)))
-                .appendNewline();
-    }
-
-    private static Component createFooter(double tps, int playerCount) {
-        String formattedTps = formatTps(tps);
-        String players = String.valueOf(playerCount);
-
-        TextColor labelColor = TextColor.color(0xBCBCBC);
-        TextColor valueColor = TextColor.color(0x79ADD6);
-        TextColor urlColor = TextColor.color(0x9F9F9F);
-
-        Component statusLine = Component.empty()
-                .append(Component.text("TPS ").color(labelColor))
-                .append(Component.text(formattedTps).color(valueColor))
-                .append(Component.text("   Players ").color(labelColor))
-                .append(Component.text(players).color(valueColor));
-
-        Component url = Component.text("Glimpsy.MineHut.gg")
-                .color(urlColor);
-
-        return Component.newline()
-                .append(statusLine)
-                .appendNewline()
-                .append(url)
-                .appendNewline();
-    }
-
-    private static String formatTps(double tpsValue) {
-        String formattedTps = String.format(Locale.US, "%.2f", tpsValue);
-
-        if (formattedTps.endsWith(".00")) {
-            return formattedTps.substring(0, formattedTps.length() - 3);
-        }
-
-        return formattedTps;
+    // async safe way of representing a player on tab
+    private record PlayerSnapshot(
+            UUID uuid,
+            UserProfile profile,
+            Location location,
+            int ping,
+            GameMode gameMode,
+            String name
+    ) {
     }
 }

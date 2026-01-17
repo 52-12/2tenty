@@ -13,12 +13,6 @@ public abstract class CustomCommand implements Documentable {
 
     protected static final int SUCCESS = Command.SINGLE_SUCCESS;
 
-    public abstract LiteralArgumentBuilder<CommandSourceStack> create();
-
-    public List<String> getAliases() {
-        return List.of();
-    }
-
     protected static Player getPlayer(CommandContext<CommandSourceStack> ctx) {
         if (!(ctx.getSource().getSender() instanceof Player player)) {
             ctx.getSource().getSender().sendRichMessage("<red>You need to be a player for this command");
@@ -26,5 +20,11 @@ public abstract class CustomCommand implements Documentable {
         }
 
         return player;
+    }
+
+    public abstract LiteralArgumentBuilder<CommandSourceStack> create();
+
+    public List<String> getAliases() {
+        return List.of();
     }
 }

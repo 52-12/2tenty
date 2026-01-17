@@ -131,13 +131,13 @@ public class ScheduleUtil {
             this.ticks = ticks;
         }
 
-        public long toTicks(long amount) {
-            return Math.round(amount * ticks);
-        }
-
         public static long convert(long value, Unit from, Unit to) {
             long ticks = from.toTicks(value);
             return Math.round(ticks / to.ticks);
+        }
+
+        public long toTicks(long amount) {
+            return Math.round(amount * ticks);
         }
     }
 }

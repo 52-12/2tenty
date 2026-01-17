@@ -41,11 +41,6 @@ public class HologramLine {
         return this;
     }
 
-    public HologramLine setLocalOffset(double offset) {
-        this.localOffset = (float) offset;
-        return this;
-    }
-
     protected void applyAbsoluteOffset(float absoluteOffset) {
         Transformation t = display.getTransformation();
 
@@ -61,6 +56,11 @@ public class HologramLine {
 
     public float getLocalOffset() {
         return localOffset;
+    }
+
+    public HologramLine setLocalOffset(double offset) {
+        this.localOffset = (float) offset;
+        return this;
     }
 
     public TextDisplay getDisplay() {

@@ -14,16 +14,16 @@ public class CompetitionStartEvent extends Event {
         this.competition = competition;
     }
 
+    public static HandlerList getHandlerList() {
+        return list;
+    }
+
     public Competition getCompetition() {
         return competition;
     }
 
     @Override
     public @NotNull HandlerList getHandlers() {
-        return list;
-    }
-
-    public static HandlerList getHandlerList() {
         return list;
     }
 }

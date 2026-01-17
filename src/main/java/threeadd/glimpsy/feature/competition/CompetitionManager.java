@@ -19,17 +19,6 @@ public class CompetitionManager extends Manager {
     private static @Nullable LocalDateTime nextCompetitionTime;
     private static @Nullable BukkitTask nextCompetitionTask;
 
-    @Override
-    public void enable() {
-        scheduleNextCompetition();
-    }
-
-    @Override
-    public void disable() {
-        if (competition != null)
-            competition.end();
-    }
-
     private static void scheduleNextCompetition() {
 
         if (nextCompetitionTask != null)
@@ -69,5 +58,16 @@ public class CompetitionManager extends Manager {
 
     public static @Nullable Competition getCompetition() {
         return competition;
+    }
+
+    @Override
+    public void enable() {
+        scheduleNextCompetition();
+    }
+
+    @Override
+    public void disable() {
+        if (competition != null)
+            competition.end();
     }
 }

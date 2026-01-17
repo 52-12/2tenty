@@ -5,8 +5,14 @@ import com.google.gson.Gson;
 import org.bukkit.Material;
 import threeadd.glimpsy.util.persistence.Repository;
 
-import java.sql.*;
-import java.util.*;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 public class RandomItemsRepository extends Repository<RandomItemsInfo> {
@@ -54,7 +60,8 @@ public class RandomItemsRepository extends Repository<RandomItemsInfo> {
 
         List<Material> disabledItems = new Gson().fromJson(
                 json,
-                new TypeToken<List<Material>>(){}.getType()
+                new TypeToken<List<Material>>() {
+                }.getType()
         );
 
         return new RandomItemsInfo(ownerId, disabledItems);
@@ -74,6 +81,6 @@ public class RandomItemsRepository extends Repository<RandomItemsInfo> {
     }
 
     public CompletableFuture<Void> saveAsync(RandomItemsInfo info) {
-      return runAsync(() -> saveSync(info));
+        return runAsync(() -> saveSync(info));
     }
 }

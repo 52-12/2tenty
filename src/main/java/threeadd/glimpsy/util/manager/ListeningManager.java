@@ -11,5 +11,6 @@ public abstract class ListeningManager extends Manager implements Listener {
         onEnable();
     }
 
-    public void onEnable() {}
+    public void onEnable() {
+    }
 }

@@ -5,11 +5,11 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.Nullable;
+import threeadd.glimpsy.feature.competition.Competition;
+import threeadd.glimpsy.feature.competition.CompetitionManager;
 import threeadd.glimpsy.util.inventory.CustomInventory;
 import threeadd.glimpsy.util.inventory.ItemBuilder;
 import threeadd.glimpsy.util.text.ComponentParser;
-import threeadd.glimpsy.feature.competition.Competition;
-import threeadd.glimpsy.feature.competition.CompetitionManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -56,8 +56,8 @@ public class CompetitionInfoInventory extends CustomInventory {
             Competition.PlayerEntry viewingEntry = competition.getEntry(viewerId);
             if (viewingEntry != null)
                 lines.add(Component.text("#" + viewingEntry.position() + " You -> " + " with " + viewingEntry.score())
-                    .appendSpace()
-                    .append(competition.getIdentifier()));
+                        .appendSpace()
+                        .append(competition.getIdentifier()));
 
             lines.addFirst(Component.text("Ends in: ").append(ComponentParser.parseLocalDateTime(competition.getEndTime())));
             lines.add(1, Component.empty());
@@ -66,8 +66,7 @@ public class CompetitionInfoInventory extends CustomInventory {
                     .withName(competition.getIdentifier().appendSpace().append(ComponentParser.parseRichString("Competition")))
                     .withLore(lines)
                     .build();
-        }
-        else {
+        } else {
             return new ItemBuilder(Material.RED_DYE)
                     .withName(Component.text("No Running competition"))
                     .withLore(Component.text("Next Competition ").append(ComponentParser.parseLocalDateTime(CompetitionManager.getNextCompetitionTime())))

@@ -27,7 +27,7 @@ public class CollectionInfoInventory extends ListInventory<Map.Entry<Material, B
     protected @NotNull ItemStack mapToItem(@NotNull Map.Entry<Material, Boolean> entry) {
         return new ItemBuilder(entry.getKey())
                 .withLore(ComponentParser.parseRichString("Collected: ")
-                                .append(ComponentParser.parseBoolean(entry.getValue())))
+                        .append(ComponentParser.parseBoolean(entry.getValue())))
                 .build();
     }
 

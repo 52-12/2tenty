@@ -11,6 +11,16 @@ import threeadd.glimpsy.util.text.ComponentParser;
 
 public class CollectionCommand extends CustomCommand {
 
+    @SuppressWarnings("SameReturnValue")
+    private static int run(CommandContext<CommandSourceStack> ctx) {
+        Player player = getPlayer(ctx);
+        if (player == null) return SUCCESS;
+
+        player.openInventory(new CollectionInfoInventory(player).getInventory());
+
+        return SUCCESS;
+    }
+
     @Override
     public Component createUsage() {
         return ComponentParser.parseRichString("View which items you have collected");
@@ -20,15 +30,5 @@ public class CollectionCommand extends CustomCommand {
     public LiteralArgumentBuilder<CommandSourceStack> create() {
         return Commands.literal("colletions")
                 .executes(CollectionCommand::run);
-    }
-
-    @SuppressWarnings("SameReturnValue")
-    private static int run(CommandContext<CommandSourceStack> ctx) {
-        Player player = getPlayer(ctx);
-        if (player == null) return SUCCESS;
-
-        player.openInventory(new CollectionInfoInventory(player).getInventory());
-
-        return SUCCESS;
     }
 }
