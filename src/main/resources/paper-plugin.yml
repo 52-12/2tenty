@@ -9,11 +9,11 @@ dependencies:
   server:
     FastAsyncWorldEdit:
       load: OMIT
-      required: true
+      required: false
       join-classpath: true
     Votifier:
       load: OMIT
-      required: true
+      required: false
       join-classpath: true
     ViaVersion:
       load: OMIT

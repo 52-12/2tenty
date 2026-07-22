@@ -1,5 +1,6 @@
 package threeadd.glimpsy.util.listener;
 
+import org.bukkit.Bukkit;
 import org.bukkit.event.Listener;
 import threeadd.glimpsy.feature.entity.GuardianListener;
 import threeadd.glimpsy.feature.entity.PiglinConvertListener;
@@ -29,7 +30,6 @@ public class ListenerRegistry extends Registry<Listener> {
                 new WindFishingListener(),
                 new ChatListener(),
                 new InteractCraftingListener(),
-                new VoteListener(),
                 new BloodListener(),
                 new ZombieSkullListener(),
                 new SkeletonSkullListener(),
@@ -49,5 +49,13 @@ public class ListenerRegistry extends Registry<Listener> {
                 new ChatShareListener(),
                 new SuicideDeathListener()
         );
+
+        // VoteListener's @EventHandler method references Votifier's own event/model classes,
+        // and Bukkit resolves those reflectively at registerEvents() time (not lazily on first
+        // vote) - so it can only be registered when Votifier is actually present, keeping it a
+        // true soft dependency.
+        if (Bukkit.getPluginManager().isPluginEnabled("Votifier")) {
+            register(new VoteListener());
+        }
     }
 }
