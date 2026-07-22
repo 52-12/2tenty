@@ -27,7 +27,7 @@ public final class ExplosiveEnchantment extends CustomEnchantment {
 
     @Override
     public Key createKey() {
-        return TypedKey.create(RegistryKey.ENCHANTMENT, Key.key("glimpsy:explosive"));
+        return TypedKey.create(RegistryKey.ENCHANTMENT, Key.key("2tenty:explosive"));
     }
 
     @Override

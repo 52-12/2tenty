@@ -17,7 +17,7 @@ import java.util.Objects;
 
 public class WindFishingListener implements Listener {
 
-    private static final NamespacedKey WIND_LURE_KEY = Objects.requireNonNull(NamespacedKey.fromString("glimpsy:wind_lure"));
+    private static final NamespacedKey WIND_LURE_KEY = Objects.requireNonNull(NamespacedKey.fromString("2tenty:wind_lure"));
     private static final Logger log = LoggerFactory.getLogger(WindFishingListener.class);
 
     private static void handleFishing(PlayerFishEvent event) {

@@ -32,25 +32,40 @@ repositories {
     }
 }
 
-dependencies {
-    paperweight.paperDevBundle("1.21.10-R0.1-SNAPSHOT")
-    implementation("com.zaxxer:HikariCP:7.0.2")
+configurations.all {
+    resolutionStrategy.capabilitiesResolution.withCapability("org.lz4:lz4-java") {
+        selectHighestVersion()
+    }
+}
 
-    implementation(platform("com.intellectualsites.bom:bom-newest:1.55"))
+dependencies {
+    paperweight.paperDevBundle("1.21.11-R0.1-SNAPSHOT")
+    implementation("com.zaxxer:HikariCP:7.0.2")
+    implementation("org.xerial:sqlite-jdbc:3.47.2.0")
+
+    implementation(platform("com.intellectualsites.bom:bom-newest:1.56"))
     compileOnly("com.fastasyncworldedit:FastAsyncWorldEdit-Core")
     compileOnly("com.fastasyncworldedit:FastAsyncWorldEdit-Bukkit")
     compileOnly("com.github.NuVotifier:NuVotifier:2.7.2")
-    compileOnly("com.github.retrooper:packetevents-spigot:2.10.1")
+    implementation("com.github.retrooper:packetevents-spigot:2.13.0")
 }
 
-build {
+jar {
+    enabled = false
+}
+
+assemble {
     dependsOn(shadowJar)
 }
 
 shadowJar {
     archiveClassifier.set('')
+    mergeServiceFiles()
     relocate('com.zaxxer.hikari', 'threeadd.glimpsy.hikari')
-    // Glimpsy also uses dependencies in paper by default:
+    relocate('org.sqlite', 'threeadd.glimpsy.sqlite')
+    relocate('com.github.retrooper.packetevents', 'threeadd.glimpsy.packetevents')
+    relocate('io.github.retrooper.packetevents', 'threeadd.glimpsy.packetevents.impl')
+    // 2tenty also uses dependencies in paper by default:
 
     // - SnakeYaml (articles, loading/saving yml files)
     // - Adventure (a ton, mainly text components)
@@ -63,13 +78,13 @@ shadowJar {
     // - ... (a lot more)
 
     // Most of these aren't very rare and are almost included in all mc server software, if you ever want to migrate
-    // the entirety of glimpsy to a different platform you'd probably have to spend a lot of time doing so since it
+    // the entirety of 2tenty to a different platform you'd probably have to spend a lot of time doing so since it
     // was specifically designed for paper with these libraries
 }
 
 tasks {
     runServer {
-        minecraftVersion("1.21")
+        minecraftVersion("1.21.11")
     }
 }
 

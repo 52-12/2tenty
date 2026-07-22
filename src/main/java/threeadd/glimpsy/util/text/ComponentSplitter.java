@@ -9,7 +9,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 // Copied from https://github.com/BetonQuest/BetonQuest/blob/main/src/main/java/org/betonquest/betonquest/api/common/component/ComponentPatternSplitter.java
-// NOT MADE BY 3add
+// NOT MADE BY 3upman
 
 /**
  * The ComponentPatternSplitter class provides functionality to split a Component by a specified pattern,

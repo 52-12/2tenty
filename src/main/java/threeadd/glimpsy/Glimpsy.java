@@ -76,7 +76,7 @@ public final class Glimpsy extends JavaPlugin {
 
         long end = System.nanoTime();
         double milliTime = (end - start) / 1_000_000D;
-        log.info("Glimpsy has finished starting up in {}ms", milliTime);
+        log.info("2tenty has finished starting up in {}ms", milliTime);
     }
 
     @Override
@@ -85,16 +85,18 @@ public final class Glimpsy extends JavaPlugin {
 
         PacketEvents.getAPI().terminate();
 
-        ManagerRegistry.INSTANCE.getRegisteredItems().forEach(Manager::disable); // First disable managers (before database, otherwise sql can't be executed sync)
-        Glimpsy.dataBase.disconnect();
+        if (dataBase != null && dataBase.isConnected()) {
+            ManagerRegistry.INSTANCE.getRegisteredItems().forEach(Manager::disable);
+            dataBase.disconnect();
+        }
 
         long end = System.nanoTime();
         double milliTime = (end - start) / 1_000_000D;
-        log.info("Glimpsy has been stopped in {}ms", milliTime);
+        log.info("2tenty has been stopped in {}ms", milliTime);
     }
 
     private boolean connectDataBase() {
-        Glimpsy.dataBase = new DataBase("pulsar.game.waffle.host:3306", "s221_Glimpsy", "u221_pz3Fkz0oJ7", "ZrV=cP.72l@uxBvpRh!f^P=R");
+        Glimpsy.dataBase = new DataBase(new java.io.File(getDataFolder(), "database.db"));
         try {
             Glimpsy.dataBase.connect();
         } catch (Throwable t) {

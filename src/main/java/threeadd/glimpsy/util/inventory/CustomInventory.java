@@ -1,7 +1,6 @@
 package threeadd.glimpsy.util.inventory;
 
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.HumanEntity;
@@ -24,8 +23,7 @@ import java.util.function.Supplier;
 public abstract class CustomInventory implements InventoryHolder {
 
     protected static final ItemStack PLACEHOLDER = new ItemBuilder(Material.GRAY_STAINED_GLASS_PANE)
-            .withName(Component.text("Glimpsy.Minehut.gg")
-                    .color(TextColor.color(0xC4C4C4)))
+            .withName(Component.empty())
             .build();
 
     private final Map<Integer, @Nullable Consumer<InventoryClickEvent>> slotClickEvents = new HashMap<>();

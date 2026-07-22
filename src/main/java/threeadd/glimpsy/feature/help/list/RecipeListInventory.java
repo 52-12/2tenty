@@ -19,25 +19,15 @@ public class RecipeListInventory extends SubHelpListInventory<CustomRecipe> {
         super(Component.text("Custom Recipes"), CustomRecipeRegistry.INSTANCE.getRegisteredItems(), viewer);
     }
 
-    private boolean hasDiscovered(CustomRecipe recipe) {
-        return getViewer().hasDiscoveredRecipe(recipe.getKey());
-    }
-
     @Override
     protected @NotNull ItemStack mapToItem(@NotNull CustomRecipe recipe) {
         return new ItemBuilder(recipe.createRecipe().getResult())
-                .withLore(recipe.createUsage(),
-                        ComponentParser.parseRichString("Discovered: ").append(ComponentParser.parseBoolean(hasDiscovered(recipe))))
+                .withLore(recipe.createUsage())
                 .build();
     }
 
     @Override
     protected @Nullable Consumer<InventoryClickEvent> mapClick(@NotNull CustomRecipe recipe) {
-        return event -> {
-            if (hasDiscovered(recipe))
-                getViewer().openInventory(new RecipeInfoInventory(getViewer(), recipe).getInventory());
-            else
-                event.getView().getPlayer().sendMessage(ComponentParser.parseRichString("You haven't discovered this recipe yet!"));
-        };
+        return event -> getViewer().openInventory(new RecipeInfoInventory(getViewer(), recipe).getInventory());
     }
 }

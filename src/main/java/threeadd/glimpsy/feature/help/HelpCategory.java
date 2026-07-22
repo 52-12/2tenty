@@ -7,16 +7,16 @@ import threeadd.glimpsy.util.text.ComponentParser;
 
 public enum HelpCategory {
     COMMANDS(ComponentParser.parseRichString("Commands"),
-            ComponentParser.parseRichString("View a list of glimpsy's custom commands"),
+            ComponentParser.parseRichString("View a list of 2tenty's custom commands"),
             ItemStack.of(Material.COMMAND_BLOCK)),
     ENCHANTMENTS(ComponentParser.parseRichString("Enchantments"),
-            ComponentParser.parseRichString("View a list of glimpsy's custom enchantments"),
+            ComponentParser.parseRichString("View a list of 2tenty's custom enchantments"),
             ItemStack.of(Material.ENCHANTED_BOOK)),
     RECIPES(ComponentParser.parseRichString("Recipes"),
-            ComponentParser.parseRichString("View a list of glimpsy's custom recipes"),
+            ComponentParser.parseRichString("View a list of 2tenty's custom recipes"),
             ItemStack.of(Material.WRITABLE_BOOK)),
     ARTICLES(ComponentParser.parseRichString("Articles"),
-            ComponentParser.parseRichString("View a list of glimpsy's community written articles"),
+            ComponentParser.parseRichString("View a list of 2tenty's community written articles"),
             ItemStack.of(Material.BOOK));
 
     private final Component title;

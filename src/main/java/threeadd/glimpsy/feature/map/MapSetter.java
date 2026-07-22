@@ -1,3 +1,4 @@
+
 package threeadd.glimpsy.feature.map;
 
 import com.fastasyncworldedit.core.FaweAPI;
@@ -28,6 +29,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 // This is my baby, the map setter, even though it's only slightly faster than FAWE itself (even though it uses FAWE, it's still faster).
 // Multi Threaded (using requested or max cpu threads), safe to call from any thread, never touching main thread.
@@ -40,8 +42,13 @@ public class MapSetter {
             Objects.requireNonNull(BlockTypes.BEDROCK).getDefaultState().toBaseBlock()
     );
     private static final Logger log = LoggerFactory.getLogger(MapSetter.class);
+    private static final AtomicBoolean RESETTING = new AtomicBoolean(false);
 
-    public static void reset(int requestedThreads) {
+    /**
+     * @return {@code true} if a reset was started, {@code false} if one is already in progress
+     * or no world border is set.
+     */
+    public static boolean reset(int requestedThreads) {
 
         long start = System.currentTimeMillis();
 
@@ -53,9 +60,20 @@ public class MapSetter {
         World world = BukkitAdapter.adapt(bukkitWorld);
 
         // Getting the world based of off the center of the world (plus half the world border)
-        double worldSize = bukkitWorld.getWorldBorder().getSize() / 2;
-        BlockVector3 min = BlockVector3.at(worldSize, -64, worldSize);
-        BlockVector3 max = BlockVector3.at(-worldSize, 319, -worldSize);
+        double borderSize = bukkitWorld.getWorldBorder().getSize();
+        if (borderSize >= 29_999_984) {
+            log.error("Cannot reset map: no world border is set. Run /worldborder set <size> first.");
+            return false;
+        }
+
+        if (!RESETTING.compareAndSet(false, true)) {
+            log.warn("A map reset is already in progress, ignoring this request.");
+            return false;
+        }
+
+        double worldSize = borderSize / 2;
+        BlockVector3 min = BlockVector3.at(-worldSize, -64, -worldSize);
+        BlockVector3 max = BlockVector3.at(worldSize, 319, worldSize);
 
         CuboidRegion region = new CuboidRegion(min, max);
 
@@ -79,6 +97,8 @@ public class MapSetter {
                     try (EditSession session = WorldEdit.getInstance().newEditSessionBuilder()
                             .world(world)
                             .limitUnlimited()
+                            .fastMode(true)
+                            .changeSetNull()
                             .build()) {
                         int replacedBlocks = session.replaceBlocks(subRegion,
                                 new BlockMask().add(state -> !unbreakableBlocks.contains(state.toBaseBlock())),
@@ -109,7 +129,13 @@ public class MapSetter {
                     double seconds = (double) (end - start) / 1000;
 
                     log.info("Reset the map in ({} blocks affected) {}s", totalBlocksReplaced, seconds);
+                })
+                .whenComplete((ignored, throwable) -> {
+                    if (throwable != null) log.error("Map reset failed", throwable);
+                    RESETTING.set(false);
                 });
+
+        return true;
     }
 
     private static void finishReset(org.bukkit.World bukkitWorld) {

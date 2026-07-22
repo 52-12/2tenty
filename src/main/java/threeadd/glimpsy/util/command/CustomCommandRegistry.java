@@ -3,9 +3,12 @@ package threeadd.glimpsy.util.command;
 import threeadd.glimpsy.feature.collection.CollectionCommand;
 import threeadd.glimpsy.feature.competition.view.CompetitionCommand;
 import threeadd.glimpsy.feature.help.HelpCommand;
+import threeadd.glimpsy.feature.help.list.RecipesCommand;
 import threeadd.glimpsy.feature.map.MapResetCommand;
 import threeadd.glimpsy.feature.nonchest.NonChestCommand;
 import threeadd.glimpsy.feature.randomitems.RandomItemCommand;
+import threeadd.glimpsy.feature.simple.HatCommand;
+import threeadd.glimpsy.feature.simple.SuicideCommand;
 import threeadd.glimpsy.feature.wind.WindCommand;
 import threeadd.glimpsy.util.registry.Registry;
 
@@ -20,6 +23,9 @@ public class CustomCommandRegistry extends Registry<CustomCommand> {
                 new NonChestCommand(),
                 new MapResetCommand(),
                 new WindCommand(),
-                new CollectionCommand());
+                new CollectionCommand(),
+                new HatCommand(),
+                new RecipesCommand(),
+                new SuicideCommand());
     }
 }

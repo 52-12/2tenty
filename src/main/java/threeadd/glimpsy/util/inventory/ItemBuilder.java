@@ -144,7 +144,7 @@ public class ItemBuilder {
      */
     public ItemBuilder withItemModel(String modelId) {
         withItemMeta(meta ->
-                meta.setItemModel(new NamespacedKey("glimpsy", modelId)));
+                meta.setItemModel(new NamespacedKey("2tenty", modelId)));
         return this;
     }
 

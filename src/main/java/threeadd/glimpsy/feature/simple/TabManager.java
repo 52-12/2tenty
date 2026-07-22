@@ -44,11 +44,11 @@ public class TabManager extends ListeningManager {
     private static Component createHeader() {
         return Component.newline()
                 .append(PADDING)
-                .append(Component.text("GLIMPSY")
+                .append(Component.text("2TENTY")
                         .decorate(TextDecoration.BOLD)
                         .color(TextColor.color(0x2881C6)))
                 .append(PADDING).appendNewline()
-                .append(Component.text("by 3add")
+                .append(Component.text("by 3upman")
                         .color(TextColor.color(0xC4C4C4)))
                 .appendNewline();
     }
@@ -67,7 +67,7 @@ public class TabManager extends ListeningManager {
                 .append(Component.text("   Players ").color(labelColor))
                 .append(Component.text(players).color(valueColor));
 
-        Component url = Component.text("Glimpsy.MineHut.gg")
+        Component url = Component.text("2tenty.MineHut.gg")
                 .color(urlColor);
 
         return Component.newline()
