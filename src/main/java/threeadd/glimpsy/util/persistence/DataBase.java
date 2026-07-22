@@ -4,34 +4,36 @@ import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import threeadd.glimpsy.util.ScheduleUtil;
 
+import java.io.File;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 public class DataBase {
 
-    private final String host;
-    private final String database;
-    private final String username;
-    private final String password;
+    private final File file;
     private HikariDataSource dataSource;
 
-    public DataBase(String host, String database, String username, String password) {
-        this.host = host;
-        this.database = database;
-        this.username = username;
-        this.password = password;
+    public DataBase(File file) {
+        this.file = file;
     }
 
-    public void connect() {
+    public void connect() throws SQLException {
+        file.getParentFile().mkdirs();
+
         HikariConfig config = new HikariConfig();
-        config.setJdbcUrl("jdbc:mysql://" + host + "/" + database);
-        config.setUsername(username);
-        config.setPassword(password);
-        config.addDataSourceProperty("cachePrepStmts", "true");
-        config.addDataSourceProperty("prepStmtCacheSize", "250");
-        config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+        config.setJdbcUrl("jdbc:sqlite:" + file.getAbsolutePath());
+        config.setMaximumPoolSize(1);
+        config.setConnectionTestQuery("SELECT 1");
         dataSource = new HikariDataSource(config);
+
+        try (Connection conn = dataSource.getConnection()) {
+            conn.createStatement().execute("PRAGMA journal_mode=WAL");
+        }
+    }
+
+    public boolean isConnected() {
+        return dataSource != null && !dataSource.isClosed();
     }
 
     public Connection getConnection() throws SQLException {

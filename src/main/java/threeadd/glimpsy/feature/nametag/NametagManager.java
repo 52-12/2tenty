@@ -16,7 +16,7 @@ import java.util.Map;
 
 public class NametagManager extends ListeningManager {
 
-    private static final String TEAM_NAME = "glimpsy";
+    private static final String TEAM_NAME = "2tenty";
 
     private static final Map<Player, Nametag> nametags = new HashMap<>();
     private static final Logger log = LoggerFactory.getLogger(NametagManager.class);

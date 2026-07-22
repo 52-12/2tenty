@@ -1,16 +1,12 @@
-name: Glimpsy
+name: 2tenty
 version: '1.0'
 main: threeadd.glimpsy.Glimpsy
-description: The Glimpsy void survival gameplay by 3add
+description: The 2tenty void survival gameplay by 3upman
 api-version: '1.21'
-authors: [ 3add ]
+authors: [ 3upman ]
 bootstrapper: threeadd.glimpsy.GlimpsyBootstrap
 dependencies:
   server:
-    packetevents:
-      load: OMIT
-      required: true
-      join-classpath: true
     FastAsyncWorldEdit:
       load: OMIT
       required: true
@@ -18,4 +14,8 @@ dependencies:
     Votifier:
       load: OMIT
       required: true
+      join-classpath: true
+    ViaVersion:
+      load: OMIT
+      required: false
       join-classpath: true

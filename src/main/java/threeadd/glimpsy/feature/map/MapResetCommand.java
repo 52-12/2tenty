@@ -11,7 +11,10 @@ import threeadd.glimpsy.util.text.ComponentParser;
 public class MapResetCommand extends CustomCommand {
 
     private static int run(CommandContext<CommandSourceStack> ctx) {
-        MapSetter.reset(Integer.MAX_VALUE);
+        if (!MapSetter.reset(Integer.MAX_VALUE)) {
+            ctx.getSource().getSender().sendMessage(ComponentParser.parseRichString(
+                    "A map reset is already in progress, or no world border is set"));
+        }
         return SUCCESS;
     }
 
@@ -23,7 +26,7 @@ public class MapResetCommand extends CustomCommand {
     @Override
     public LiteralArgumentBuilder<CommandSourceStack> create() {
         return Commands.literal("mapreset")
-                .requires(source -> source.getSender().hasPermission("glimpsy.command.mapreset"))
+                .requires(source -> source.getSender().hasPermission("2tenty.command.mapreset"))
                 .executes(MapResetCommand::run);
     }
 }

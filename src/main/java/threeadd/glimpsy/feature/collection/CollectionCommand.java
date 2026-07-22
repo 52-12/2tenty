@@ -28,7 +28,7 @@ public class CollectionCommand extends CustomCommand {
 
     @Override
     public LiteralArgumentBuilder<CommandSourceStack> create() {
-        return Commands.literal("colletions")
+        return Commands.literal("collections")
                 .executes(CollectionCommand::run);
     }
 }
