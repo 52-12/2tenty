@@ -1,4 +1,4 @@
-package threeadd.glimpsy.feature.collection;
+package threeadd.glimpsy.feature.discord;
 
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
@@ -9,26 +9,30 @@ import org.bukkit.entity.Player;
 import threeadd.glimpsy.util.command.CustomCommand;
 import threeadd.glimpsy.util.text.ComponentParser;
 
-public class CollectionCommand extends CustomCommand {
+public class DiscordMessagesCommand extends CustomCommand {
 
     @SuppressWarnings("SameReturnValue")
     private static int run(CommandContext<CommandSourceStack> ctx) {
         Player player = getPlayer(ctx);
         if (player == null) return SUCCESS;
 
-        player.openInventory(new CollectionInfoInventory(player).getInventory());
+        boolean newState = !DiscordManager.isMessagesEnabled(player);
+        DiscordManager.setMessagesEnabled(player, newState);
+
+        player.sendMessage(ComponentParser.parseRichString(
+                "Discord announcements are now " + (newState ? "<green>enabled" : "<red>disabled") + " for you"));
 
         return SUCCESS;
     }
 
     @Override
     public Component createUsage() {
-        return ComponentParser.parseRichString("View which items you have collected");
+        return ComponentParser.parseRichString("Toggle whether you personally receive periodic Discord invite reminders");
     }
 
     @Override
     public LiteralArgumentBuilder<CommandSourceStack> create() {
-        return Commands.literal("collections")
-                .executes(CollectionCommand::run);
+        return Commands.literal("togglediscord")
+                .executes(DiscordMessagesCommand::run);
     }
 }

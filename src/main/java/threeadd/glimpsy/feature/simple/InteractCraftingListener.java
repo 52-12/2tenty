@@ -13,9 +13,21 @@ import threeadd.glimpsy.util.text.ComponentParser;
 
 public class InteractCraftingListener implements Listener {
 
+    private static boolean enabled = true;
+
+    public static boolean isEnabled() {
+        return enabled;
+    }
+
+    public static void setEnabled(boolean enabled) {
+        InteractCraftingListener.enabled = enabled;
+    }
+
     @SuppressWarnings("UnstableApiUsage")
     @EventHandler
     public void onInteract(PlayerInteractEvent event) {
+        if (!enabled) return;
+
         if (!event.getAction().equals(Action.RIGHT_CLICK_AIR))
             return;
 

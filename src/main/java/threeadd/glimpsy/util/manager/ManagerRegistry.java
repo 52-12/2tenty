@@ -2,6 +2,7 @@ package threeadd.glimpsy.util.manager;
 
 import threeadd.glimpsy.feature.collection.CollectionManager;
 import threeadd.glimpsy.feature.competition.CompetitionManager;
+import threeadd.glimpsy.feature.discord.DiscordManager;
 import threeadd.glimpsy.feature.map.MapResetManager;
 import threeadd.glimpsy.feature.nametag.NametagManager;
 import threeadd.glimpsy.feature.nonchest.NonChestManager;
@@ -22,6 +23,7 @@ public class ManagerRegistry extends Registry<Manager> {
                 new NametagManager(),
                 new WindManager(),
                 new CollectionManager(),
-                new TabManager());
+                new TabManager(),
+                new DiscordManager());
     }
 }

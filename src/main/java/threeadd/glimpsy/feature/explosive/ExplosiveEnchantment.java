@@ -66,9 +66,11 @@ public final class ExplosiveEnchantment extends CustomEnchantment {
 
     @Override
     public List<TagKey<Enchantment>> createTags() {
+        // ON_RANDOM_LOOT deliberately omitted - Explosive is no longer obtainable from vanilla
+        // random loot (fishing treasure, dungeon chests, etc). It's now only available via
+        // the enchanting table, or the low-chance charged creeper fishing catch.
         return List.of(
-                EnchantmentTagKeys.IN_ENCHANTING_TABLE,
-                EnchantmentTagKeys.ON_RANDOM_LOOT
+                EnchantmentTagKeys.IN_ENCHANTING_TABLE
         );
     }
 }
