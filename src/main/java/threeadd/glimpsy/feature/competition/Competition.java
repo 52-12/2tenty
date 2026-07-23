@@ -52,7 +52,11 @@ public abstract class Competition implements Listener {
         endTime = LocalDateTime.now().plusMinutes(minutesToEnd);
         endTask = ScheduleUtil.scheduleSync(this::end, minutesToEnd, ScheduleUtil.Unit.MINUTE);
 
-        Bukkit.broadcast(identifier.append(ComponentParser.parseRichString(" Competition <green>Started")));
+        Component message = identifier.append(ComponentParser.parseRichString(" Competition <green>Started"));
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (CompetitionManager.isMessagesEnabled(player))
+                player.sendMessage(message);
+        }
     }
 
     public void end() {
@@ -68,11 +72,16 @@ public abstract class Competition implements Listener {
 
         Bukkit.getPluginManager().callEvent(new CompetitionEndEvent(this, winningEntry));
 
-        Bukkit.broadcast(identifier.append(ComponentParser.parseRichString(" Competition <red>Ended ")
+        Component message = identifier.append(ComponentParser.parseRichString(" Competition <red>Ended ")
                 .append(ComponentParser.parseRichString((winningEntry == null
                         ? "No One"
                         : getSortedEntries().getFirst().player().getName())
-                        + " has won!"))));
+                        + " has won!")));
+
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (CompetitionManager.isMessagesEnabled(player))
+                player.sendMessage(message);
+        }
     }
 
     public LocalDateTime getEndTime() {

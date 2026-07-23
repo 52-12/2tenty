@@ -17,12 +17,14 @@ public class CustomRecipeRegistry extends Registry<CustomRecipe> {
                 new GoldHelmetRecipe(),
                 new GoldChestPlateRecipe(),
                 new GoldLeggingsRecipe(),
-                new GoldBootsRecipe());
+                new GoldBootsRecipe(),
+                new HopperRecipe());
     }
 
     public List<NamespacedKey> getRemovedRecipes() {
         return List.of(
-                NamespacedKey.minecraft("bundle")
+                NamespacedKey.minecraft("bundle"),
+                NamespacedKey.minecraft("hopper")
         );
     }
 }

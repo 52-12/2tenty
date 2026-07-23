@@ -47,7 +47,12 @@ public class ListenerRegistry extends Registry<Listener> {
                 new LavaCauldronListener(),
                 new SaddleRideListener(),
                 new ChatShareListener(),
-                new SuicideDeathListener()
+                new SuicideDeathListener(),
+                new BedrockBoatListener(),
+                new ChargedCreeperFishingListener(),
+                new GuardianFishingListener(),
+                new PlayerFishingListener(),
+                new VillagerBreedListener()
         );
 
         // VoteListener's @EventHandler method references Votifier's own event/model classes,

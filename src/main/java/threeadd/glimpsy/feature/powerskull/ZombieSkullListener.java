@@ -3,6 +3,8 @@ package threeadd.glimpsy.feature.powerskull;
 import com.destroystokyo.paper.event.player.PlayerArmorChangeEvent;
 import org.bukkit.Material;
 import org.bukkit.Sound;
+import org.bukkit.entity.Creeper;
+import org.bukkit.entity.Guardian;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -49,6 +51,11 @@ public class ZombieSkullListener implements Listener {
     public void onTarget(EntityTargetLivingEntityEvent event) {
         if (event.isCancelled()) return;
         if (!(event.getTarget() instanceof Player player)) return;
+
+        // Charged Creepers and Guardians see through the Zombie Head disguise - otherwise
+        // wearing one would trivialize the fished charged creeper/guardian encounters.
+        if (event.getEntity() instanceof Creeper creeper && creeper.isPowered()) return;
+        if (event.getEntity() instanceof Guardian) return;
 
         ItemStack helmet = player.getInventory().getHelmet();
         if (helmet == null || helmet.getType() != Material.ZOMBIE_HEAD) return;

@@ -53,8 +53,12 @@ public class LuckBottleListener implements Listener {
         if (!isLuckApplicable(hoverItem)) return;
         if (!isWaterBottle(clickedItem)) return;
 
+        Material fishType = hoverItem.getType();
+        double chance = luckMap.get(fishType);
+        hoverItem.subtract(1); // consume the fish on every roll, not just on success
+
         Random random = ThreadLocalRandom.current();
-        if (!(random.nextDouble() < luckMap.get(hoverItem.getType()))) {
+        if (!(random.nextDouble() < chance)) {
             Sound sound = Sound.sound(Key.key("minecraft:ui.button.click"), Sound.Source.AMBIENT, 1, 0.1F);
             event.getView().getPlayer().playSound(sound, Sound.Emitter.self());
 
@@ -62,7 +66,6 @@ public class LuckBottleListener implements Listener {
             return;
         }
 
-        event.getCursor().subtract(1);
         event.setCurrentItem(new ItemBuilder(Material.POTION)
                 .withItemMeta(PotionMeta.class, meta ->
                         meta.setBasePotionType(PotionType.LUCK))

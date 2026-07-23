@@ -18,7 +18,8 @@ import java.util.*;
 public class TNTTrailListener implements Listener {
 
     private static final int OVERALL_MAX_TNT_TRAIL = 1000;
-    private static final int TNT_TRAIL_EXTENSION = 20;
+    private static final int TNT_TRAIL_EXTENSION = 12;
+    private static final int WAVE_DELAY_TICKS = 4;
     private static final ParticleBuilder BROKEN_PARTICLE = Particle.CLOUD.builder()
             .extra(0d)
             .offset(0.5, 0.5, 0.5);
@@ -98,8 +99,8 @@ public class TNTTrailListener implements Listener {
         int finalRemaining = remaining;
         ScheduleUtil.scheduleSync(
                 () -> processWave(nextWave, visited, finalRemaining, totalBroken),
-                2,
-                ScheduleUtil.Unit.TICK); // run next wave 2 tick later
+                WAVE_DELAY_TICKS,
+                ScheduleUtil.Unit.TICK);
     }
 
     private static boolean isBreakable(Block block) {

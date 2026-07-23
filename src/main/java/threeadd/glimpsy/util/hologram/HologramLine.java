@@ -20,6 +20,7 @@ public class HologramLine {
         display.setBackgroundColor(Color.fromARGB(0)); // transparent
         display.setShadowed(true);
         display.setBillboard(Display.Billboard.CENTER);
+        display.setPersistent(false); // never write these to the world save - they're rebuilt on join
     }
 
     public HologramLine setText(Component text) {

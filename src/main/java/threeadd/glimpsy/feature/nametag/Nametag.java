@@ -40,7 +40,7 @@ public class Nametag extends Hologram {
         cleanupDeadLines();
 
         if (getRoot() == null
-                || getRoot().getType().isAlive()
+                || getRoot().isDead()
                 || !player.getPassengers().contains(getRoot())) {
             clearLines();
             spawn();
