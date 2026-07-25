@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import threeadd.glimpsy.util.ScheduleUtil;
 import threeadd.glimpsy.util.manager.ListeningManager;
+import threeadd.glimpsy.util.text.ComponentParser;
 
 import java.util.Map;
 import java.util.UUID;
@@ -74,7 +75,10 @@ public class RandomItemManager extends ListeningManager {
             if (!randomItemInfo.isEnabled(material))
                 continue;
 
-            player.give(item);
+            if (!player.getInventory().addItem(item).isEmpty()) {
+                player.sendActionBar(ComponentParser.parseRichString(
+                        "<red>Your inventory is full - free up space to keep receiving items"));
+            }
         }
     }
 

@@ -27,4 +27,14 @@ public abstract class CustomCommand implements Documentable {
     public List<String> getAliases() {
         return List.of();
     }
+
+    /**
+     * Whether this command should show up in the /help command list for the given viewer.
+     * Doesn't affect whether the command can actually be run - only its own {@code .requires(...)}
+     * on {@link #create()} controls that. Override this on staff-only commands so regular
+     * players don't see them listed.
+     */
+    public boolean isVisibleTo(Player viewer) {
+        return true;
+    }
 }

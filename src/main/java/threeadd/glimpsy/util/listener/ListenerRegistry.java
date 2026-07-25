@@ -52,7 +52,9 @@ public class ListenerRegistry extends Registry<Listener> {
                 new ChargedCreeperFishingListener(),
                 new GuardianFishingListener(),
                 new PlayerFishingListener(),
-                new VillagerBreedListener()
+                new VillagerBreedListener(),
+                new SaltListener(),
+                new MyceliumSilkTouchListener()
         );
 
         // VoteListener's @EventHandler method references Votifier's own event/model classes,

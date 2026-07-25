@@ -6,6 +6,7 @@ import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 import threeadd.glimpsy.util.command.CustomCommand;
 import threeadd.glimpsy.util.text.ComponentParser;
 
@@ -35,5 +36,10 @@ public class MapResetCommand extends CustomCommand {
         return Commands.literal("mapreset")
                 .requires(source -> source.getSender().hasPermission("2tenty.command.mapreset"))
                 .executes(MapResetCommand::run);
+    }
+
+    @Override
+    public boolean isVisibleTo(Player viewer) {
+        return viewer.hasPermission("2tenty.command.mapreset");
     }
 }

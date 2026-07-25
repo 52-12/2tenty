@@ -74,6 +74,14 @@ public final class Glimpsy extends JavaPlugin {
         });
         log.info("Registered {} commands", commands.size());
 
+        // DiscordSRV dispatches its own API events through its own event bus, not Bukkit's -
+        // referencing DiscordSRVChatBridgeListener at all resolves DiscordSRV's classes, so it
+        // must only happen once we've confirmed DiscordSRV is actually installed.
+        if (getServer().getPluginManager().isPluginEnabled("DiscordSRV")) {
+            threeadd.glimpsy.feature.discordsrv.DiscordSRVChatBridgeListener.register();
+            log.info("Registered DiscordSRV chat mute bridge");
+        }
+
         long end = System.nanoTime();
         double milliTime = (end - start) / 1_000_000D;
         log.info("2tenty has finished starting up in {}ms", milliTime);

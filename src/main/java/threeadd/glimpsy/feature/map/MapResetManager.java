@@ -36,7 +36,8 @@ public class MapResetManager extends Manager {
         time = MapResetRepository.getInstance().loadSync().orElse(new MapResetTime());
         log.info("Loaded Map Reset time at {}", time.getTime().toString());
 
-        schedule();
+        // Automatic scheduled resets are disabled for now - /mapreset still works manually.
+        // schedule();
     }
 
     @Override

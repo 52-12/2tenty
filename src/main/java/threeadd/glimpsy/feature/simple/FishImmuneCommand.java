@@ -36,4 +36,9 @@ public class FishImmuneCommand extends CustomCommand {
                 .requires(source -> source.getSender().hasPermission("2tenty.command.fishimmune"))
                 .executes(FishImmuneCommand::run);
     }
+
+    @Override
+    public boolean isVisibleTo(Player viewer) {
+        return viewer.hasPermission("2tenty.command.fishimmune");
+    }
 }

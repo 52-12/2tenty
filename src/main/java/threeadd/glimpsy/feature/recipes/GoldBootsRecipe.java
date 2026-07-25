@@ -17,8 +17,8 @@ public class GoldBootsRecipe extends CustomRecipe {
         return new FurnaceRecipe(new NamespacedKey(Glimpsy.getInstance(), "furnace_gold_boots"),
                 ItemStack.of(Material.GOLD_NUGGET, 2),
                 Material.GOLDEN_BOOTS,
-                100,
-                50);
+                50,
+                300);
     }
 
     @Override
