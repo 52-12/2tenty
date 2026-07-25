@@ -56,5 +56,10 @@
       <option name="name" value="code-mc" />
       <option name="url" value="https://repo.codemc.io/repository/maven-releases/" />
     </remote-repository>
+    <remote-repository>
+      <option name="id" value="scarsz-nexus" />
+      <option name="name" value="scarsz-nexus" />
+      <option name="url" value="https://nexus.scarsz.me/content/groups/public/" />
+    </remote-repository>
   </component>
 </project>

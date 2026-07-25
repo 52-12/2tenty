@@ -22,7 +22,7 @@ public class GoldLeggingsRecipe extends CustomRecipe {
         return new FurnaceRecipe(new NamespacedKey(Glimpsy.getInstance(), "furnace_gold_leggings"),
                 ItemStack.of(Material.GOLD_NUGGET, 5),
                 Material.GOLDEN_LEGGINGS,
-                100,
-                50);
+                50,
+                300);
     }
 }

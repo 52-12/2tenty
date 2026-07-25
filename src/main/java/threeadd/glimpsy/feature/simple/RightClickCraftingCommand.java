@@ -5,6 +5,7 @@ import com.mojang.brigadier.context.CommandContext;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import net.kyori.adventure.text.Component;
+import org.bukkit.entity.Player;
 import threeadd.glimpsy.util.command.CustomCommand;
 import threeadd.glimpsy.util.text.ComponentParser;
 
@@ -31,5 +32,10 @@ public class RightClickCraftingCommand extends CustomCommand {
         return Commands.literal("rightclickcrafting")
                 .requires(source -> source.getSender().hasPermission("2tenty.command.rightclickcrafting"))
                 .executes(RightClickCraftingCommand::run);
+    }
+
+    @Override
+    public boolean isVisibleTo(Player viewer) {
+        return viewer.hasPermission("2tenty.command.rightclickcrafting");
     }
 }

@@ -9,14 +9,18 @@ import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPl
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerInfoUpdate.PlayerInfo;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerListHeaderAndFooter;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import threeadd.glimpsy.feature.nickname.NicknameManager;
+import threeadd.glimpsy.feature.teams.TeamManager;
 import threeadd.glimpsy.util.ScheduleUtil;
 import threeadd.glimpsy.util.manager.ListeningManager;
 import threeadd.glimpsy.util.text.ComponentParser;
@@ -165,6 +169,20 @@ public class TabManager extends ListeningManager {
                     order = Integer.MAX_VALUE - (int) distance; // reverse order
                 }
 
+                String nickname = NicknameManager.getNickname(target.uuid());
+                if (nickname != null)
+                    displayName = NicknameManager.getDisplayName(target.name(), target.uuid());
+
+                String teamName = TeamManager.getTeamName(target.uuid());
+                if (teamName != null) {
+                    displayName = Component.textOfChildren(
+                            Component.text("[", NamedTextColor.GRAY),
+                            MiniMessage.miniMessage().deserialize(teamName),
+                            Component.text("] ", NamedTextColor.GRAY),
+                            displayName
+                    );
+                }
+
                 packetEntries.add(new PlayerInfo(
                         target.profile(),
                         true,
@@ -179,6 +197,8 @@ public class TabManager extends ListeningManager {
             WrapperPlayServerPlayerInfoUpdate infoPacket = new WrapperPlayServerPlayerInfoUpdate(UPDATE_ACTIONS, packetEntries);
 
             User viewingUser = userMap.get(viewer.uuid());
+            if (viewingUser == null) continue; // disconnected between the snapshot and this async send
+
             viewingUser.sendPacket(infoPacket);
             viewingUser.sendPacket(headerFooterPacket);
         }

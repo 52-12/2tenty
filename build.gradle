@@ -30,6 +30,11 @@ repositories {
         name = "code-mc"
         url = uri("https://repo.codemc.io/repository/maven-releases/")
     }
+
+    maven { // discordsrv, and its JDA fork
+        name = "scarsz-nexus"
+        url = uri("https://nexus.scarsz.me/content/groups/public/")
+    }
 }
 
 configurations.all {
@@ -47,6 +52,7 @@ dependencies {
     compileOnly("com.fastasyncworldedit:FastAsyncWorldEdit-Core")
     compileOnly("com.fastasyncworldedit:FastAsyncWorldEdit-Bukkit")
     compileOnly("com.github.NuVotifier:NuVotifier:2.7.2")
+    compileOnly("com.discordsrv:discordsrv:1.28.0")
     implementation("com.github.retrooper:packetevents-spigot:2.13.0")
 }
 

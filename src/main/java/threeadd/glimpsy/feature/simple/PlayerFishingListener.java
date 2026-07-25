@@ -19,7 +19,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class PlayerFishingListener implements Listener {
 
-    private static final double FISH_PLAYER_CHANCE = 0.005; // 0.5% per successful catch - very rare
+    private static final double FISH_PLAYER_CHANCE = 0.001; // 0.1% per successful catch - very rare
 
     private static final Set<UUID> immunePlayers = ConcurrentHashMap.newKeySet();
 

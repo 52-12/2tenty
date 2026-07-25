@@ -17,7 +17,9 @@ import threeadd.glimpsy.util.text.ComponentParser;
 public class CommandListInventory extends SubHelpListInventory<CustomCommand> {
 
     public CommandListInventory(Player viewer) {
-        super(Component.text("Custom Commands"), CustomCommandRegistry.INSTANCE.getRegisteredItems(), viewer);
+        super(Component.text("Custom Commands"), CustomCommandRegistry.INSTANCE.getRegisteredItems().stream()
+                .filter(command -> command.isVisibleTo(viewer))
+                .toList(), viewer);
 
         setTransferSlot(Rows.SIX.getTotalSlots() - 9,
                 new ItemBuilder(Material.RED_DYE)

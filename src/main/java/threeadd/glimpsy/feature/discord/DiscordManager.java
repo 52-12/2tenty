@@ -52,7 +52,7 @@ public class DiscordManager extends ListeningManager {
 
     @Override
     public void onEnable() {
-        ScheduleUtil.scheduleSync(this::announce, 10, 10, ScheduleUtil.Unit.MINUTE);
+        ScheduleUtil.scheduleSync(this::announce, 6, 6, ScheduleUtil.Unit.MINUTE);
     }
 
     @EventHandler

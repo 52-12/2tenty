@@ -13,12 +13,20 @@ public class Hologram {
 
     private final List<HologramLine> lines = new ArrayList<>();
     private final List<BukkitTask> activeTasks = new ArrayList<>();
-    private final Location baseLocation;
+    private Location baseLocation;
 
     private double lineSpacing = 0.25;
 
     public Hologram(Location baseLocation) {
         this.baseLocation = baseLocation.clone();
+    }
+
+    // New lines spawn at baseLocation before being mounted onto the chain - if it's gone stale
+    // (e.g. the entity this hologram follows changed worlds since construction) the mount can
+    // silently fail across worlds, leaving orphaned displays behind at the old spot forever.
+    // Callers that rebuild a hologram after detecting it came unmounted should re-anchor first.
+    protected void relocate(Location location) {
+        this.baseLocation = location.clone();
     }
 
     public Hologram withSpacing(double spacing) {

@@ -15,6 +15,10 @@ dependencies:
       load: OMIT
       required: false
       join-classpath: true
+    DiscordSRV:
+      load: BEFORE
+      required: false
+      join-classpath: true
     ViaVersion:
       load: OMIT
       required: false
