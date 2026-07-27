@@ -9,6 +9,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.inventory.ItemStack;
+import threeadd.glimpsy.util.config.ConfigManager;
 
 public class PiglinSkullListener implements Listener {
 
@@ -30,7 +31,7 @@ public class PiglinSkullListener implements Listener {
         ItemStack helmet = attacker.getInventory().getHelmet();
         if (helmet == null || helmet.getType() != Material.PIGLIN_HEAD) return;
 
-        event.setDamage(event.getDamage() * 2.5);
+        event.setDamage(event.getDamage() * ConfigManager.getDouble("piglin-skull.damage-multiplier", 2.5));
     }
 
     @EventHandler

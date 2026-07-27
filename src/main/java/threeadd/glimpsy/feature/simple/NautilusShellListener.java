@@ -5,36 +5,19 @@ import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerFishEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.loot.LootContext;
 import org.bukkit.loot.LootTable;
 import org.bukkit.loot.LootTables;
+import threeadd.glimpsy.util.config.ConfigManager;
 
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class NautilusShellListener implements Listener {
-
-    private static final double BONUS_SHELL_CHANCE = 0.05; // 5% bonus chance per successful catch
-
-    // MONITOR + ignoreCancelled so this only applies to catches that weren't hijacked by
-    // ChargedCreeperFishingListener/GuardianFishingListener (both run at NORMAL priority).
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onFish(PlayerFishEvent event) {
-        if (event.getState() != PlayerFishEvent.State.CAUGHT_FISH) return;
-        if (ThreadLocalRandom.current().nextDouble() >= BONUS_SHELL_CHANCE) return;
-
-        Player player = event.getPlayer();
-        Map<Integer, ItemStack> leftOver = player.getInventory().addItem(new ItemStack(Material.NAUTILUS_SHELL));
-        for (ItemStack leftOverItem : leftOver.values()) {
-            player.getWorld().dropItem(event.getHook().getLocation(), leftOverItem);
-        }
-    }
 
     @EventHandler
     public void onUse(PlayerInteractEvent event) {
@@ -49,7 +32,7 @@ public class NautilusShellListener implements Listener {
         if (lootTable == null) return;
 
         heldItem.subtract(1);
-        player.setCooldown(Material.NAUTILUS_SHELL, 20);
+        player.setCooldown(Material.NAUTILUS_SHELL, ConfigManager.getInt("nautilus-shell.cooldown-ticks", 20));
         player.swingMainHand();
         player.playSound(player, Sound.ITEM_BRUSH_BRUSHING_SAND, 0.5F, 1.0F);
 

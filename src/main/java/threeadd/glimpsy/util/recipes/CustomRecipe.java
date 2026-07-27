@@ -32,4 +32,26 @@ public abstract class CustomRecipe implements Documentable {
 
         throw new IllegalStateException("Unknown CraftingRecipe instance" + recipe);
     }
+
+    /**
+     * Whether this recipe gets its own entry in /recipes. Doesn't affect whether the recipe
+     * actually works in-game - only its own registration in {@link threeadd.glimpsy.util.recipes.CustomRecipeRegistry}
+     * controls that. Override this to {@code false} on recipes that are just a variant of
+     * another one already listed (e.g. the other armor pieces, or the blast furnace version of
+     * one already shown) so /recipes doesn't fill up with near-duplicates.
+     */
+    public boolean isListed() {
+        return true;
+    }
+
+    /**
+     * Whether this recipe should actually be registered with Bukkit as a working recipe.
+     * Override to {@code false} for recipes that only need a /recipes entry because the real
+     * crafting is handled by hand elsewhere (e.g. requires consuming whole stacks, or picking a
+     * weighted result) - a registered {@link Recipe} can't express that, and would let players
+     * bypass the real logic by matching it with a single item per slot instead.
+     */
+    public boolean isRegistered() {
+        return true;
+    }
 }

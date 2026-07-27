@@ -4,19 +4,24 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import threeadd.glimpsy.util.config.ConfigManager;
+import threeadd.glimpsy.util.config.Messages;
 
 import java.util.regex.Pattern;
 
 /**
  * Validates a raw MiniMessage colored-nickname string. Same rules as team names (colors only,
- * no decorations, ASCII-only whitelist to prevent homograph tricks), plus the nickname must
- * contain the player's real Mojang username as an exact substring - this is what stops it from
- * being used to impersonate someone else entirely, it can only ever be a styled version of your
- * own real name.
+ * no decorations, ASCII-only whitelist to prevent homograph tricks), plus the nickname's plain
+ * text must equal the player's real Mojang username exactly - no text before or after it. This
+ * is what stops it from being used to impersonate someone else, or to smuggle extra text (e.g.
+ * a fake rank or message) into what's displayed as someone's name - it can only ever be a
+ * styled version of your own real name, nothing more.
  */
 public class NicknameValidator {
 
-    public static final int MAX_LENGTH = 24;
+    private static int maxLength() {
+        return ConfigManager.getInt("nicknames.max-length", 24);
+    }
 
     private static final Pattern SAFE_CHARACTERS = Pattern.compile("^[a-zA-Z0-9 _-]+$");
 
@@ -44,25 +49,28 @@ public class NicknameValidator {
         try {
             parsed = MiniMessage.miniMessage().deserialize(rawInput);
         } catch (Exception e) {
-            return Result.fail("That nickname couldn't be parsed - check your color tags");
+            return Result.fail(Messages.get("nicknames.unparseable", "That nickname couldn't be parsed - check your color tags"));
         }
 
         if (hasDisallowedDecoration(parsed))
-            return Result.fail("Nicknames can't use bold, italic, underline, strikethrough, or obfuscated text");
+            return Result.fail(Messages.get("nicknames.decorated", "Nicknames can't use bold, italic, underline, strikethrough, or obfuscated text"));
 
         String plainText = PlainTextComponentSerializer.plainText().serialize(parsed);
 
         if (plainText.isBlank())
-            return Result.fail("Nicknames can't be empty");
+            return Result.fail(Messages.get("nicknames.empty", "Nicknames can't be empty"));
 
-        if (plainText.length() > MAX_LENGTH)
-            return Result.fail("Nicknames can't be longer than " + MAX_LENGTH + " characters");
+        if (plainText.length() > maxLength())
+            return Result.fail(Messages.get("nicknames.too-long", "Nicknames can't be longer than {max} characters",
+                    "max", String.valueOf(maxLength())));
 
         if (!SAFE_CHARACTERS.matcher(plainText).matches())
-            return Result.fail("Nicknames can only contain letters, numbers, spaces, - and _");
+            return Result.fail(Messages.get("nicknames.bad-characters", "Nicknames can only contain letters, numbers, spaces, - and _"));
 
-        if (!plainText.contains(realUsername))
-            return Result.fail("Your nickname must contain your real username (" + realUsername + ")");
+        if (!plainText.equals(realUsername))
+            return Result.fail(Messages.get("nicknames.must-match-username",
+                    "Your nickname must be exactly your real username ({username}), just styled with color tags",
+                    "username", realUsername));
 
         return Result.ok(parsed);
     }

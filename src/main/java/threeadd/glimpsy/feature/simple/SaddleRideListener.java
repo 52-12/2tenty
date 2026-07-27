@@ -12,6 +12,7 @@ import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 import threeadd.glimpsy.Glimpsy;
+import threeadd.glimpsy.util.config.ConfigManager;
 
 public class SaddleRideListener implements Listener {
 
@@ -25,7 +26,7 @@ public class SaddleRideListener implements Listener {
         if (helmet == null || helmet.getType() != Material.SADDLE) return;
         if (player.getCooldown(Material.SADDLE) > 0) return;
 
-        player.setCooldown(Material.SADDLE, 20);
+        player.setCooldown(Material.SADDLE, ConfigManager.getInt("saddle-ride.cooldown-ticks", 20));
 
         new BukkitRunnable() {
             @Override
@@ -34,7 +35,7 @@ public class SaddleRideListener implements Listener {
                 who.addPassenger(player);
                 player.playSound(player.getLocation(), Sound.ITEM_ARMOR_EQUIP_GENERIC, 1.0F, 1.0F);
             }
-        }.runTaskLater(Glimpsy.getInstance(), 20L);
+        }.runTaskLater(Glimpsy.getInstance(), ConfigManager.getInt("saddle-ride.mount-delay-ticks", 20));
     }
 
     @EventHandler

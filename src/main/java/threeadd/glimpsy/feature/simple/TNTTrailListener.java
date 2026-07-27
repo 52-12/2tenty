@@ -12,14 +12,24 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.inventory.ItemStack;
 import threeadd.glimpsy.util.ScheduleUtil;
+import threeadd.glimpsy.util.config.ConfigManager;
 
 import java.util.*;
 
 public class TNTTrailListener implements Listener {
 
-    private static final int OVERALL_MAX_TNT_TRAIL = 1000;
-    private static final int TNT_TRAIL_EXTENSION = 12;
-    private static final int WAVE_DELAY_TICKS = 4;
+    private static int overallMaxTntTrail() {
+        return ConfigManager.getInt("tnt.overall-max-trail-blocks", 1000);
+    }
+
+    private static int tntTrailExtension() {
+        return ConfigManager.getInt("tnt.trail-extension", 60); // was 12 - a lot bigger blast radius
+    }
+
+    private static int waveDelayTicks() {
+        return ConfigManager.getInt("tnt.wave-delay-ticks", 4);
+    }
+
     private static final ParticleBuilder BROKEN_PARTICLE = Particle.CLOUD.builder()
             .extra(0d)
             .offset(0.5, 0.5, 0.5);
@@ -60,7 +70,7 @@ public class TNTTrailListener implements Listener {
         while (!wave.isEmpty() && remaining > 0) {
             Block block = wave.poll();
 
-            if (totalBroken >= OVERALL_MAX_TNT_TRAIL) {
+            if (totalBroken >= overallMaxTntTrail()) {
                 return;
             }
 
@@ -71,7 +81,7 @@ public class TNTTrailListener implements Listener {
             if (isTNT) {
                 block.setType(Material.AIR);
 
-                remaining += TNT_TRAIL_EXTENSION;
+                remaining += tntTrailExtension();
 
                 remaining--; // Decrement for the TNT block itself
                 brokenThisWave++;
@@ -99,12 +109,13 @@ public class TNTTrailListener implements Listener {
         int finalRemaining = remaining;
         ScheduleUtil.scheduleSync(
                 () -> processWave(nextWave, visited, finalRemaining, totalBroken),
-                WAVE_DELAY_TICKS,
+                waveDelayTicks(),
                 ScheduleUtil.Unit.TICK);
     }
 
     private static boolean isBreakable(Block block) {
         if (!block.isSolid()) return false;
+        if (DeepslateExplosionListener.isProtected(block.getType())) return false;
 
         return switch (block.getType()) {
             case BEDROCK, BARRIER -> false;
@@ -118,6 +129,6 @@ public class TNTTrailListener implements Listener {
             return;
         event.setCancelled(true);
 
-        explode(event.getLocation(), TNT_TRAIL_EXTENSION);
+        explode(event.getLocation(), tntTrailExtension());
     }
 }

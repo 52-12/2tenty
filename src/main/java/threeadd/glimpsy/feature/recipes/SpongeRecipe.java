@@ -25,4 +25,9 @@ public class SpongeRecipe extends CustomRecipe {
                 15,
                 100);
     }
+
+    @Override
+    public boolean isListed() {
+        return false;
+    }
 }

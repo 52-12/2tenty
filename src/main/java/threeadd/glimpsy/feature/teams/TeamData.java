@@ -21,6 +21,13 @@ public class TeamData {
     private UUID owner;
     private InviteMode inviteMode = InviteMode.OWNER_ONLY;
 
+    // A team can only be in one alliance at a time. allianceId points at the confirmed, mutual
+    // Alliance (see TeamManager); allianceOfferTo is a one-sided proposal this team has sent to
+    // another TEAM that's waiting on that team to reciprocate with their own /team alliance
+    // command.
+    private UUID allianceId;
+    private UUID allianceOfferTo;
+
     private final Set<UUID> members = ConcurrentHashMap.newKeySet();
     private final Set<UUID> trustedInviters = ConcurrentHashMap.newKeySet();
 
@@ -64,6 +71,22 @@ public class TeamData {
         this.inviteMode = inviteMode;
     }
 
+    public UUID getAllianceId() {
+        return allianceId;
+    }
+
+    public void setAllianceId(UUID allianceId) {
+        this.allianceId = allianceId;
+    }
+
+    public UUID getAllianceOfferTo() {
+        return allianceOfferTo;
+    }
+
+    public void setAllianceOfferTo(UUID allianceOfferTo) {
+        this.allianceOfferTo = allianceOfferTo;
+    }
+
     public Set<UUID> getMembers() {
         return members;
     }
@@ -83,6 +106,11 @@ public class TeamData {
 
     // Same people who can manage invites/kicks (owner + trusted) can change the shared design.
     public boolean canModifyShieldSkin(UUID actor) {
+        return actor.equals(owner) || trustedInviters.contains(actor);
+    }
+
+    // Same permission tier as the shield skin and invite/kick management.
+    public boolean canModifyAlliance(UUID actor) {
         return actor.equals(owner) || trustedInviters.contains(actor);
     }
 

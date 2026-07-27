@@ -1,10 +1,13 @@
 package threeadd.glimpsy;
 
 import com.github.retrooper.packetevents.PacketEvents;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder;
+import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import org.bukkit.NamespacedKey;
 import org.bukkit.event.Listener;
+import org.bukkit.permissions.Permission;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,11 +16,15 @@ import threeadd.glimpsy.util.command.CustomCommandRegistry;
 import threeadd.glimpsy.util.listener.ListenerRegistry;
 import threeadd.glimpsy.util.manager.Manager;
 import threeadd.glimpsy.util.manager.ManagerRegistry;
+import threeadd.glimpsy.util.config.ConfigManager;
+import threeadd.glimpsy.util.config.Messages;
 import threeadd.glimpsy.util.persistence.DataBase;
 import threeadd.glimpsy.util.recipes.CustomRecipe;
 import threeadd.glimpsy.util.recipes.CustomRecipeRegistry;
+import threeadd.glimpsy.util.worldguard.WorldGuardFlags;
 
 import java.util.List;
+import java.util.function.Predicate;
 
 public final class Glimpsy extends JavaPlugin {
 
@@ -37,6 +44,14 @@ public final class Glimpsy extends JavaPlugin {
     public void onLoad() {
         PacketEvents.setAPI(SpigotPacketEventsBuilder.build(this));
         PacketEvents.getAPI().load();
+
+        // Must happen here, not onEnable() - WorldGuard's flag registry only accepts new flags
+        // before WorldGuard's own onEnable() runs, and Bukkit finishes every plugin's onLoad()
+        // before starting any plugin's onEnable(), regardless of load order between us and it.
+        if (getServer().getPluginManager().getPlugin("WorldGuard") != null) {
+            WorldGuardFlags.register();
+            log.info("Registered custom WorldGuard flags");
+        }
     }
 
     @Override
@@ -45,6 +60,8 @@ public final class Glimpsy extends JavaPlugin {
 
         Glimpsy.instance = this;
 
+        ConfigManager.load();
+        Messages.load();
         PacketEvents.getAPI().init();
 
         if (!connectDataBase()) // If connecting failed, stop plugin from enabling
@@ -56,7 +73,7 @@ public final class Glimpsy extends JavaPlugin {
 
         List<CustomRecipe> recipes = CustomRecipeRegistry.INSTANCE.getRegisteredItems();
         for (CustomRecipe recipe : recipes)
-            getServer().addRecipe(recipe.createRecipe());
+            if (recipe.isRegistered()) getServer().addRecipe(recipe.createRecipe());
         List<NamespacedKey> removedRecipeKeys = CustomRecipeRegistry.INSTANCE.getRemovedRecipes();
         for (NamespacedKey recipeKey : removedRecipeKeys)
             getServer().removeRecipe(recipeKey);
@@ -68,9 +85,28 @@ public final class Glimpsy extends JavaPlugin {
         log.info("Registered {} listeners", listeners.size());
 
         List<CustomCommand> commands = CustomCommandRegistry.INSTANCE.getRegisteredItems();
+
+        // Every command gets a "2tenty.command.<name>" node, granted to everyone by default so
+        // a permissions plugin (e.g. LuckPerms) can revoke it per group/player without any
+        // default-group setup. Guarded against re-registration for plugin-reload tools.
+        for (CustomCommand command : commands) {
+            if (getServer().getPluginManager().getPermission(command.getPermissionNode()) == null)
+                getServer().getPluginManager().addPermission(
+                        new Permission(command.getPermissionNode(), command.getPermissionDefault()));
+        }
+
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, registrar -> {
-            for (CustomCommand command : commands)
-                registrar.registrar().register(command.create().build(), command.getAliases()); // register the commands to make for the server
+            for (CustomCommand command : commands) {
+                LiteralArgumentBuilder<CommandSourceStack> builder = command.create();
+
+                // Layer the node check on top of any .requires() the command already set
+                // (staff commands keep their own stricter node) - both must pass.
+                Predicate<CommandSourceStack> existing = builder.getRequirement();
+                String node = command.getPermissionNode();
+                builder.requires(source -> existing.test(source) && source.getSender().hasPermission(node));
+
+                registrar.registrar().register(builder.build(), command.getAliases());
+            }
         });
         log.info("Registered {} commands", commands.size());
 

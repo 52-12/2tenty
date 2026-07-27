@@ -6,6 +6,7 @@ import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
+import org.bukkit.permissions.PermissionDefault;
 import threeadd.glimpsy.util.command.CustomCommand;
 import threeadd.glimpsy.util.text.ComponentParser;
 
@@ -40,5 +41,12 @@ public class FishImmuneCommand extends CustomCommand {
     @Override
     public boolean isVisibleTo(Player viewer) {
         return viewer.hasPermission("2tenty.command.fishimmune");
+    }
+
+    // Same node string as the auto-derived one - must stay OP or the blanket TRUE
+    // registration would open this staff command to everyone
+    @Override
+    public PermissionDefault getPermissionDefault() {
+        return PermissionDefault.OP;
     }
 }

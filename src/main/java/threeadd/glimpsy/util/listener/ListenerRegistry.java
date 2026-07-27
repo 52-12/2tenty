@@ -12,6 +12,8 @@ import threeadd.glimpsy.feature.powerskull.ZombieSkullListener;
 import threeadd.glimpsy.feature.simple.*;
 import threeadd.glimpsy.feature.vote.VoteListener;
 import threeadd.glimpsy.feature.wind.WindFishingListener;
+import threeadd.glimpsy.feature.teams.TeamChatListener;
+import threeadd.glimpsy.util.hologram.HologramVisibilityListener;
 import threeadd.glimpsy.util.inventory.CustomInventoryListener;
 import threeadd.glimpsy.util.registry.Registry;
 
@@ -36,7 +38,6 @@ public class ListenerRegistry extends Registry<Listener> {
                 new PiglinSkullListener(),
                 new GuardianListener(),
                 new PiglinConvertListener(),
-                new CorianRootListener(),
                 new NautilusShellListener(),
                 new LightningRodListener(),
                 new EnderPortalDebuffListener(),
@@ -44,7 +45,6 @@ public class ListenerRegistry extends Registry<Listener> {
                 new MudClayListener(),
                 new SuspiciousSandListener(),
                 new SuspiciousGravelListener(),
-                new LavaCauldronListener(),
                 new SaddleRideListener(),
                 new ChatShareListener(),
                 new SuicideDeathListener(),
@@ -54,7 +54,20 @@ public class ListenerRegistry extends Registry<Listener> {
                 new PlayerFishingListener(),
                 new VillagerBreedListener(),
                 new SaltListener(),
-                new MyceliumSilkTouchListener()
+                new MyceliumSilkTouchListener(),
+                new VoidInstakillListener(),
+                new SuspiciousSandFallListener(),
+                new VillagerTradeListener(),
+                new CreeperSpawnListener(),
+                new DeepslateExplosionListener(),
+                new BridgeEggListener(),
+                new TNTExplosionRadiusListener(),
+                new TNTExtinguishListener(),
+                new TridentDropListener(),
+                new SeagrassDropListener(),
+                new HologramVisibilityListener(),
+                new BedOwnershipListener(),
+                new TeamChatListener()
         );
 
         // VoteListener's @EventHandler method references Votifier's own event/model classes,

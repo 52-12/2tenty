@@ -3,6 +3,7 @@ package threeadd.glimpsy.feature.help.list;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.*;
@@ -21,11 +22,7 @@ public class RecipeInfoInventory extends CustomInventory {
     private final Map<Integer, List<ItemStack>> cyclingSlots = new HashMap<>();
 
     public RecipeInfoInventory(Player viewer, CustomRecipe customRecipe) {
-        super(Rows.FIVE, customRecipe.createRecipe().getResult()
-                        .effectiveName().appendSpace()
-                        .append(Component.text("Recipe"))
-                        .color(NamedTextColor.DARK_GRAY),
-                viewer);
+        super(Rows.FIVE, buildTitle(customRecipe), viewer);
 
         setTransferSlot(Rows.FIVE.getTotalSlots() - 9,
                 new ItemBuilder(Material.RED_DYE)
@@ -45,6 +42,17 @@ public class RecipeInfoInventory extends CustomInventory {
         }
 
         startCyclingSlots();
+    }
+
+    // Item names can carry their own explicit color (e.g. from ItemBuilder#withName), which would
+    // otherwise override this title's color for just that portion of the text, leaving a
+    // mismatched chest name - strip it back to plain text first so the whole title is one
+    // consistent color no matter what the result item itself looks like.
+    private static Component buildTitle(CustomRecipe customRecipe) {
+        String resultName = PlainTextComponentSerializer.plainText()
+                .serialize(customRecipe.createRecipe().getResult().effectiveName());
+
+        return Component.text(resultName + " Recipe").color(NamedTextColor.BLACK);
     }
 
     private static List<ItemStack> getItemStacksFromChoice(RecipeChoice choice) {

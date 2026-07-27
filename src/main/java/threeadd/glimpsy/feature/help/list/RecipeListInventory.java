@@ -16,7 +16,9 @@ import java.util.function.Consumer;
 public class RecipeListInventory extends SubHelpListInventory<CustomRecipe> {
 
     public RecipeListInventory(Player viewer) {
-        super(Component.text("Custom Recipes"), CustomRecipeRegistry.INSTANCE.getRegisteredItems(), viewer);
+        super(Component.text("Custom Recipes"), CustomRecipeRegistry.INSTANCE.getRegisteredItems().stream()
+                .filter(CustomRecipe::isListed)
+                .toList(), viewer);
     }
 
     @Override

@@ -14,7 +14,13 @@ public class GoldHelmetRecipe extends CustomRecipe {
 
     @Override
     public Component createUsage() {
-        return ComponentParser.parseRichString("Added for gold gathering");
+        return ComponentParser.parseRichString(
+                "Smelt gold armor into gold nuggets:\n" +
+                        "helmet: 3\n" +
+                        "chestplate: 7\n" +
+                        "leggings: 5\n" +
+                        "boots: 2\n" +
+                        "Blast furnaces work too and are twice as fast.");
     }
 
     @Override

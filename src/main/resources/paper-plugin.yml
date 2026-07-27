@@ -11,6 +11,10 @@ dependencies:
       load: OMIT
       required: false
       join-classpath: true
+    WorldGuard:
+      load: BEFORE
+      required: false
+      join-classpath: true
     Votifier:
       load: OMIT
       required: false

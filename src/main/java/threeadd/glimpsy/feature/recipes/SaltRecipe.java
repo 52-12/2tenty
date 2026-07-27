@@ -15,12 +15,12 @@ import threeadd.glimpsy.util.text.ComponentParser;
 
 public class SaltRecipe extends CustomRecipe {
 
-    // Quartz reused as Salt's item/texture - tagged so it can be told apart from real Quartz
-    // and blocked from vanilla quartz recipes (see SaltListener).
+    // White concrete powder reused as Salt's item/texture - tagged so it can be told apart from
+    // the real block and blocked from vanilla concrete powder recipes (see SaltListener).
     public static final NamespacedKey SALT_KEY = new NamespacedKey(Glimpsy.getInstance(), "salt");
 
     public static ItemStack createSaltItem(int amount) {
-        return new ItemBuilder(Material.QUARTZ)
+        return new ItemBuilder(Material.WHITE_CONCRETE_POWDER)
                 .withAmount(amount)
                 .withName(Component.text("Salt"))
                 .withItemMeta(meta -> meta.getPersistentDataContainer().set(SALT_KEY, PersistentDataType.BOOLEAN, true))
@@ -28,7 +28,7 @@ public class SaltRecipe extends CustomRecipe {
     }
 
     public static boolean isSalt(ItemStack item) {
-        if (item.getType() != Material.QUARTZ) return false;
+        if (item.getType() != Material.WHITE_CONCRETE_POWDER) return false;
 
         ItemMeta meta = item.getItemMeta();
         return meta != null && meta.getPersistentDataContainer().has(SALT_KEY, PersistentDataType.BOOLEAN);

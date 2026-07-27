@@ -7,6 +7,7 @@ import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Location;
 import org.jetbrains.annotations.NotNull;
+import threeadd.glimpsy.util.config.ConfigManager;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -104,18 +105,50 @@ public class ComponentParser {
         return parts;
     }
 
+    private static final TextColor DISTANCE_NEAR_COLOR = TextColor.color(0xFFF8EB);
+    private static final TextColor DISTANCE_FAR_COLOR = TextColor.color(0x4B4B4B);
+
+    private static double distanceMaxFade() {
+        return ConfigManager.getDouble("chat.proximity-fade-max-distance", 300.0);
+    }
+
     public static Component getDistancedString(Location locationA, Location locationB, String string) {
-        double distanceBetweenPlayers = locationA.distance(locationB);
-
-        TextColor nearColor = TextColor.color(0xFFF8EB);
-        TextColor farColor = TextColor.color(0x4B4B4B);
-
-        double maxFadeDistance = 300D;
-        double fadeAmount = Math.min(distanceBetweenPlayers / maxFadeDistance, 1.0);
-
-        TextColor finalColor = interpolateColor(nearColor, farColor, fadeAmount);
+        double fadeAmount = distanceFadeAmount(locationA, locationB);
+        TextColor finalColor = interpolateColor(DISTANCE_NEAR_COLOR, DISTANCE_FAR_COLOR, fadeAmount);
 
         return Component.text(string, finalColor);
+    }
+
+    /**
+     * Same distance fade as {@link #getDistancedString}, but for an already-styled component
+     * (e.g. a colored nickname) instead of a plain string - each existing color in the tree
+     * fades toward gray from its OWN color rather than being flattened to one uniform color, so
+     * a colored nickname keeps its hue up close and still fades out at range like a plain name.
+     */
+    public static Component getDistancedComponent(Location locationA, Location locationB, Component original) {
+        double fadeAmount = distanceFadeAmount(locationA, locationB);
+        return fadeComponent(original, fadeAmount);
+    }
+
+    private static double distanceFadeAmount(Location locationA, Location locationB) {
+        double distanceBetweenPlayers = locationA.distance(locationB);
+        return Math.min(distanceBetweenPlayers / distanceMaxFade(), 1.0);
+    }
+
+    private static Component fadeComponent(Component component, double fadeAmount) {
+        TextColor currentColor = component.color();
+        TextColor nearColor = currentColor != null ? currentColor : DISTANCE_NEAR_COLOR;
+
+        Component faded = component.color(interpolateColor(nearColor, DISTANCE_FAR_COLOR, fadeAmount));
+
+        List<Component> children = faded.children();
+        if (children.isEmpty()) return faded;
+
+        List<Component> fadedChildren = new ArrayList<>(children.size());
+        for (Component child : children)
+            fadedChildren.add(fadeComponent(child, fadeAmount));
+
+        return faded.children(fadedChildren);
     }
 
     public static TextColor interpolateColor(TextColor start, TextColor end, double fraction) {

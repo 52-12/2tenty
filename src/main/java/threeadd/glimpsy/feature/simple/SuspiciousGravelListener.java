@@ -11,6 +11,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.loot.LootContext;
 import org.bukkit.loot.LootTable;
 import org.bukkit.loot.LootTables;
+import threeadd.glimpsy.util.config.ConfigManager;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -51,7 +52,8 @@ public class SuspiciousGravelListener implements Listener {
         ThreadLocalRandom random = ThreadLocalRandom.current();
         ItemStack result;
 
-        if (random.nextInt(100) <= 98) {
+        int commonLootChancePercent = ConfigManager.getInt("suspicious-gravel.common-loot-chance-percent", 98);
+        if (random.nextInt(100) <= commonLootChancePercent) {
             result = new ItemStack(COMMON_LOOT[random.nextInt(COMMON_LOOT.length)]);
         } else {
             LootTable lootTable = Bukkit.getLootTable(LootTables.ANCIENT_CITY.getKey());

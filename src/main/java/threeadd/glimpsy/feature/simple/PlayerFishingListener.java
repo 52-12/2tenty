@@ -8,6 +8,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerFishEvent;
+import threeadd.glimpsy.util.config.ConfigManager;
 import threeadd.glimpsy.util.text.ComponentParser;
 
 import java.util.ArrayList;
@@ -19,7 +20,9 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class PlayerFishingListener implements Listener {
 
-    private static final double FISH_PLAYER_CHANCE = 0.001; // 0.1% per successful catch - very rare
+    private static double fishPlayerChance() {
+        return ConfigManager.getDouble("player-fishing.catch-chance", 0.001); // per successful catch - very rare
+    }
 
     private static final Set<UUID> immunePlayers = ConcurrentHashMap.newKeySet();
 
@@ -37,7 +40,7 @@ public class PlayerFishingListener implements Listener {
     @EventHandler
     public void onFish(PlayerFishEvent event) {
         if (event.getState() != PlayerFishEvent.State.CAUGHT_FISH) return;
-        if (ThreadLocalRandom.current().nextDouble() >= FISH_PLAYER_CHANCE) return;
+        if (ThreadLocalRandom.current().nextDouble() >= fishPlayerChance()) return;
 
         Player fisher = event.getPlayer();
 

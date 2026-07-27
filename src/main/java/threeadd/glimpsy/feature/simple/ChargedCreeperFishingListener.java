@@ -17,6 +17,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 import org.bukkit.persistence.PersistentDataType;
 import threeadd.glimpsy.Glimpsy;
+import threeadd.glimpsy.util.config.ConfigManager;
 import threeadd.glimpsy.util.enchantments.CustomEnchantmentRegistry;
 import threeadd.glimpsy.util.text.ComponentParser;
 
@@ -27,8 +28,13 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class ChargedCreeperFishingListener implements Listener {
 
-    private static final double CHARGED_CREEPER_CHANCE = 0.02; // 2% per successful catch
-    private static final double EXPLOSIVE_BOOK_CHANCE = 0.25; // 25% chance on kill
+    private static double chargedCreeperChance() {
+        return ConfigManager.getDouble("charged-creeper-fishing.catch-chance", 0.015); // per successful catch
+    }
+
+    private static double explosiveBookChance() {
+        return ConfigManager.getDouble("charged-creeper-fishing.explosive-book-drop-chance", 0.225); // on kill
+    }
 
     private static final NamespacedKey FISHED_CREEPER_KEY = new NamespacedKey(Glimpsy.getInstance(), "fished_charged_creeper");
     private static final NamespacedKey FISHER_KEY = new NamespacedKey(Glimpsy.getInstance(), "fished_creeper_owner");
@@ -44,7 +50,7 @@ public class ChargedCreeperFishingListener implements Listener {
         Player player = event.getPlayer();
         if (playersWithActiveCreeper.contains(player.getUniqueId())) return;
 
-        if (ThreadLocalRandom.current().nextDouble() >= CHARGED_CREEPER_CHANCE) return;
+        if (ThreadLocalRandom.current().nextDouble() >= chargedCreeperChance()) return;
 
         event.setCancelled(true);
 
@@ -74,7 +80,7 @@ public class ChargedCreeperFishingListener implements Listener {
         if (fisherId != null)
             playersWithActiveCreeper.remove(UUID.fromString(fisherId));
 
-        if (ThreadLocalRandom.current().nextDouble() >= EXPLOSIVE_BOOK_CHANCE) return;
+        if (ThreadLocalRandom.current().nextDouble() >= explosiveBookChance()) return;
 
         event.getDrops().add(createExplosiveBook());
     }

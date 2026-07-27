@@ -35,6 +35,10 @@ public final class ExplosiveEnchantment extends CustomEnchantment {
         return Component.text("Explosive");
     }
 
+    // Not config-driven like most other balance knobs - createInfo() is called synchronously
+    // during Paper's plugin bootstrap phase (see GlimpsyBootstrap), which runs before Glimpsy's
+    // own onEnable() sets its instance or loads config.yml, so ConfigManager isn't safely usable
+    // this early.
     @Override
     public CustomEnchantmentInfo createInfo() {
         return new CustomEnchantmentInfo(

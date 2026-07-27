@@ -12,13 +12,15 @@ public class RandomItemsInfo {
 
     private final UUID ownerId;
     private final Map<Material, Boolean> states;
+    private boolean fullInventoryAlertEnabled;
 
     public RandomItemsInfo(Player owner) {
-        this(owner.getUniqueId(), List.of()); // Don't disable any by default
+        this(owner.getUniqueId(), List.of(), true); // Don't disable any by default
     }
 
-    protected RandomItemsInfo(UUID ownerId, List<Material> disabledMaterials) {
+    protected RandomItemsInfo(UUID ownerId, List<Material> disabledMaterials, boolean fullInventoryAlertEnabled) {
         this.ownerId = ownerId;
+        this.fullInventoryAlertEnabled = fullInventoryAlertEnabled;
 
         Map<Material, Boolean> totalStates = createDefaultStates();
 
@@ -50,6 +52,19 @@ public class RandomItemsInfo {
             throw new IllegalStateException("Couldn't find a random material: " + material.toString());
 
         return states.get(material);
+    }
+
+    public boolean isFullInventoryAlertEnabled() {
+        return fullInventoryAlertEnabled;
+    }
+
+    public void setFullInventoryAlertEnabled(boolean enabled) {
+        this.fullInventoryAlertEnabled = enabled;
+    }
+
+    // Whether this is all still default state - if so it's not worth persisting a row for it.
+    public boolean isDefault() {
+        return fullInventoryAlertEnabled && states.equals(createDefaultStates());
     }
 
     // Repo Data access
