@@ -18,18 +18,21 @@ those files are heavily commented, copy-me starting points for a recipe, a comma
 - **Paper 1.21.11** server (it uses Paper-only APIs, so Spigot/Bukkit won't work).
 - Optional plugins — the plugin runs fine without them, individual features just switch off:
   - **[FastAsyncWorldEdit](https://modrinth.com/plugin/fastasyncworldedit)** — needed for `/mapreset` / `/fullreset` (the world wipe).
-  - **[WorldGuard](https://modrinth.com/mod/world-guard)** — enables the `bridge-egg` and `boat-fix` region flags.
-  - **Votifier / NuVotifier** — vote rewards.
+  - **[WorldGuard](https://modrinth.com/plugin/worldguard/)** — enables the `bridge-egg` and `boat-fix` region flags.
   - **DiscordSRV** — the in-game ⇄ Discord chat-mute bridge.
 
 ## Recommended plugins
 
 These aren't required, but the server 2tenty was built for runs them alongside it:
 
-- **[WorldGuard](https://modrinth.com/mod/world-guard)** — region protection; also unlocks this
+- **[WorldGuard](https://modrinth.com/plugin/worldguard/)** — region protection; also unlocks this
   plugin's `bridge-egg` and `boat-fix` region flags.
+- **[LuckPerms](https://luckperms.net/)** — permissions; lets you revoke this plugin's per-command
+  `2tenty.command.*` nodes (and the staff-only ones).
 - **[LightningGrim](https://github.com/Axionize/LightningGrim)** — a performance-optimised fork of
   the GrimAC anti-cheat.
+- **[KnockbackSync](https://modrinth.com/plugin/knockbacksync)** — makes knockback consistent for
+  high-latency players.
 
 ## Building
 
@@ -44,6 +47,41 @@ The finished plugin jar ends up in `build/libs/2tenty-1.0.jar`. Drop it in your 
 
 > There's also a `deploy.ps1` (Windows/PowerShell) that stops a local dev server over RCON,
 > rebuilds, copies the jar in, and starts it again — handy while iterating.
+
+## Updating to a newer Minecraft version
+
+The Minecraft version this plugin targets lives in **one place: `gradle.properties`**. To build for
+a newer version:
+
+1. Open `gradle.properties` and edit the two values:
+   ```properties
+   minecraftVersion=1.21.11   # the exact Paper version (must be a real published dev bundle)
+   paperApiVersion=1.21       # just major.minor - only changes on a new minor (1.21.x -> 1.22)
+   ```
+   `minecraftVersion` must match a Paper dev-bundle that actually exists — check
+   <https://papermc.io/downloads/paper> for the latest. `paperApiVersion` is the API level Paper
+   advertises and only needs bumping when the **minor** version changes (e.g. `1.21` → `1.22`).
+
+2. Rebuild: `./gradlew build`. That's it — `build.gradle` reads both values, and `paper-plugin.yml`
+   gets its `api-version` filled in automatically, so nothing else needs touching for a normal bump.
+
+3. **If the build fails to compile**, Mojang changed an API. Read the compiler errors — they point
+   at the exact lines. The places most likely to break on a big update are:
+   - anything using **packetevents** (`feature/simple/TabManager.java`) — bump the
+     `packetevents-spigot` version in `build.gradle` to one that supports the new Minecraft version.
+   - the **optional soft-dependencies** (`compileOnly(...)` in `build.gradle`): WorldGuard,
+     FastAsyncWorldEdit, DiscordSRV. Update their versions to releases that target the new
+     Minecraft version.
+   - **enchantment / recipe registration** (`GlimpsyBootstrap.java`, `feature/explosive`,
+     `util/enchantments`) and **scoreboard** (`feature/scoreboard`), which use Paper APIs that
+     occasionally change shape between versions.
+
+Everything else (config, messages, saved data) is version-independent and carries over untouched.
+
+> **Why it's only "mostly" future-proof:** no Minecraft plugin can be fully future-proof — Mojang
+> and Paper change APIs every major version, so a big jump (say 1.21 → 1.23) will usually need a few
+> code tweaks. What this setup guarantees is that a *routine* bump is a one-line change, and when a
+> jump does break something the compiler tells you exactly where.
 
 ---
 

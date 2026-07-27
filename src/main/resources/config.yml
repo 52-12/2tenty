@@ -89,6 +89,12 @@ seagrass:
   # only vanilla source), making it unobtainable. Seagrass players already own is unaffected.
   obtainable: false
 
+mending:
+  # false disables the Mending enchantment - items with it no longer repair from XP (the XP
+  # goes to the player as normal instead). The enchantment can still appear on items, it just
+  # does nothing.
+  enabled: true
+
 teams:
   name-max-length: 12
   invite-expiry-minutes: 5

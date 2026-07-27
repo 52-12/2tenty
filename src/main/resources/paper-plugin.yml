@@ -1,8 +1,10 @@
 name: 2tenty
-version: '1.0'
+# version and api-version are filled in at build time from gradle.properties (see build.gradle's
+# processResources block). Change the target Minecraft version there, not here.
+version: '${version}'
 main: threeadd.glimpsy.Glimpsy
 description: The 2tenty void survival gameplay by 3upman
-api-version: '1.21'
+api-version: '${apiVersion}'
 authors: [ 3upman ]
 bootstrapper: threeadd.glimpsy.GlimpsyBootstrap
 dependencies:
@@ -13,10 +15,6 @@ dependencies:
       join-classpath: true
     WorldGuard:
       load: BEFORE
-      required: false
-      join-classpath: true
-    Votifier:
-      load: OMIT
       required: false
       join-classpath: true
     DiscordSRV:
