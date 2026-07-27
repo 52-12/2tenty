@@ -45,9 +45,6 @@ cd Glimpsy
 The finished plugin jar ends up in `build/libs/2tenty-1.0.jar`. Drop it in your server's
 `plugins/` folder and restart.
 
-> There's also a `deploy.ps1` (Windows/PowerShell) that stops a local dev server over RCON,
-> rebuilds, copies the jar in, and starts it again — handy while iterating.
-
 ## Updating to a newer Minecraft version
 
 The Minecraft version this plugin targets lives in **one place: `gradle.properties`**. To build for
