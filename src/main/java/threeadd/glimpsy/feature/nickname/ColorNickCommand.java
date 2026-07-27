@@ -8,6 +8,7 @@ import io.papermc.paper.command.brigadier.Commands;
 import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
 import threeadd.glimpsy.util.command.CustomCommand;
+import threeadd.glimpsy.util.config.Messages;
 import threeadd.glimpsy.util.text.ComponentParser;
 
 public class ColorNickCommand extends CustomCommand {
@@ -21,12 +22,12 @@ public class ColorNickCommand extends CustomCommand {
 
         NicknameValidator.Result result = NicknameValidator.validate(rawName, player.getName());
         if (!result.valid()) {
-            player.sendMessage(ComponentParser.parseRichString("<red>" + result.errorMessage()));
+            player.sendMessage(ComponentParser.parseRichString(Messages.brand("<error>" + result.errorMessage())));
             return SUCCESS;
         }
 
         NicknameManager.setNickname(player, rawName);
-        player.sendMessage(Component.text("Your name is now: ").append(result.parsed()));
+        player.sendMessage(Messages.msg("nicknames.set", "Your name is now: ").append(result.parsed()));
 
         return SUCCESS;
     }
@@ -37,14 +38,14 @@ public class ColorNickCommand extends CustomCommand {
         if (player == null) return SUCCESS;
 
         NicknameManager.clearNickname(player);
-        player.sendMessage(ComponentParser.parseRichString("Your name color was reset"));
+        player.sendMessage(Messages.msg("nicknames.reset", "Your name color was reset"));
 
         return SUCCESS;
     }
 
     @Override
     public Component createUsage() {
-        return ComponentParser.parseRichString("Color your username with MiniMessage tags (max 24 characters, must contain your real username)");
+        return ComponentParser.parseRichString("Color your username with MiniMessage tags (max 24 characters, must be exactly your real username)");
     }
 
     @Override

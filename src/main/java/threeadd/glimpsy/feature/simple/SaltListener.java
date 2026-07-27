@@ -16,9 +16,10 @@ import java.util.Map;
 
 public class SaltListener implements Listener {
 
-    // Salt is Quartz under the hood, so it would otherwise silently work in every vanilla
-    // quartz recipe (recipe matching is by Material, not display name/PDC). Block any result
-    // that isn't our own Salted Jerky recipe whenever Salt is in the crafting grid.
+    // Salt is white concrete powder under the hood, so it would otherwise silently work in
+    // every vanilla concrete powder recipe (recipe matching is by Material, not display
+    // name/PDC). Block any result that isn't our own Salted Jerky recipe whenever Salt is in
+    // the crafting grid.
     @EventHandler
     public void onPrepareCraft(PrepareItemCraftEvent event) {
         boolean hasSalt = false;
@@ -37,11 +38,11 @@ public class SaltListener implements Listener {
         event.getInventory().setResult(null);
     }
 
-    // Vanilla has no furnace recipe that outputs plain Quartz, so any Quartz extracted from a
+    // Vanilla has no furnace recipe that outputs white concrete powder, so any extracted from a
     // furnace can only be our Salt recipe - return the player's bucket empty (1 per 2 salt).
     @EventHandler
     public void onExtract(FurnaceExtractEvent event) {
-        if (event.getItemType() != Material.QUARTZ) return;
+        if (event.getItemType() != Material.WHITE_CONCRETE_POWDER) return;
 
         int buckets = event.getItemAmount() / 2;
         if (buckets <= 0) return;

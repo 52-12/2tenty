@@ -9,13 +9,10 @@ import io.papermc.paper.command.brigadier.argument.ArgumentTypes;
 import io.papermc.paper.command.brigadier.argument.resolvers.FinePositionResolver;
 import io.papermc.paper.math.FinePosition;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.event.ClickCallback;
-import net.kyori.adventure.text.event.ClickEvent;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
+import org.bukkit.permissions.PermissionDefault;
 import threeadd.glimpsy.util.command.CustomCommand;
 import threeadd.glimpsy.util.text.ComponentParser;
 
@@ -25,12 +22,14 @@ import java.util.Locale;
 @SuppressWarnings("UnstableApiUsage")
 public class WorldSpawnCommand extends CustomCommand {
 
+    private static final float NORTH_YAW = 180f;
+
     @SuppressWarnings("SameReturnValue")
     private static int runHere(CommandContext<CommandSourceStack> ctx) {
         Player player = getPlayer(ctx);
         if (player == null) return SUCCESS;
 
-        promptOrApply(ctx, player.getLocation());
+        apply(ctx, player.getLocation());
         return SUCCESS;
     }
 
@@ -40,29 +39,16 @@ public class WorldSpawnCommand extends CustomCommand {
         FinePosition position = resolver.resolve(ctx.getSource());
 
         World world = ctx.getSource().getLocation().getWorld();
-        promptOrApply(ctx, new Location(world, position.x(), position.y(), position.z()));
+        apply(ctx, new Location(world, position.x(), position.y(), position.z()));
 
         return SUCCESS;
     }
 
-    private static void promptOrApply(CommandContext<CommandSourceStack> ctx, Location location) {
-        // Console (or anything else that isn't a Player) can't click a confirm button, so
-        // there's nothing to confirm - just apply it directly.
-        if (!(ctx.getSource().getSender() instanceof Player)) {
-            WorldSpawnManager.setCustomSpawn(location);
-            ctx.getSource().getSender().sendMessage(successMessage(location));
-            return;
-        }
+    private static void apply(CommandContext<CommandSourceStack> ctx, Location location) {
+        location.setYaw(NORTH_YAW); // spawn always faces north, regardless of which way it was set facing
 
-        Component confirmButton = Component.text("[Confirm]", NamedTextColor.GREEN, TextDecoration.BOLD)
-                .clickEvent(ClickEvent.callback(audience -> {
-                    WorldSpawnManager.setCustomSpawn(location);
-                    audience.sendMessage(successMessage(location));
-                }, ClickCallback.Options.builder().uses(1).build()));
-
-        ctx.getSource().getSender().sendMessage(
-                ComponentParser.parseRichString("Set world spawn to <#63C14F>" + formatCoords(location) + "<reset>? ")
-                        .append(confirmButton));
+        WorldSpawnManager.setCustomSpawn(location);
+        ctx.getSource().getSender().sendMessage(successMessage(location));
     }
 
     private static Component successMessage(Location location) {
@@ -98,5 +84,12 @@ public class WorldSpawnCommand extends CustomCommand {
     @Override
     public boolean isVisibleTo(Player viewer) {
         return viewer.hasPermission("2tenty.command.setworldspawn");
+    }
+
+    // Same node string as the auto-derived one - must stay OP or the blanket TRUE
+    // registration would open this staff command to everyone
+    @Override
+    public PermissionDefault getPermissionDefault() {
+        return PermissionDefault.OP;
     }
 }

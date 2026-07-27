@@ -25,4 +25,9 @@ public class IronBootsRecipe extends CustomRecipe {
     public Component createUsage() {
         return ComponentParser.parseRichString("Added for iron gathering");
     }
+
+    @Override
+    public boolean isListed() {
+        return false; // shown as part of IronHelmetRecipe's /recipes entry instead
+    }
 }

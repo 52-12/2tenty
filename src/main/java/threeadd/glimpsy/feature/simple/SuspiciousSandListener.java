@@ -11,6 +11,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.loot.LootContext;
 import org.bukkit.loot.LootTable;
 import org.bukkit.loot.LootTables;
+import threeadd.glimpsy.util.config.ConfigManager;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -18,6 +19,11 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class SuspiciousSandListener implements Listener {
+
+    private static final Material[] RARE_LOOT = {
+            Material.FLINT,
+            Material.QUARTZ
+    };
 
     private static final Material[] COMMON_LOOT = {
             Material.BOW,
@@ -59,7 +65,12 @@ public class SuspiciousSandListener implements Listener {
         ThreadLocalRandom random = ThreadLocalRandom.current();
         ItemStack result;
 
-        if (random.nextInt(100) <= 50) {
+        double rareLootChancePercent = ConfigManager.getDouble("suspicious-sand.rare-loot-chance-percent", 3.0);
+        int commonLootChancePercent = ConfigManager.getInt("suspicious-sand.common-loot-chance-percent", 50);
+
+        if (random.nextDouble(100) < rareLootChancePercent) {
+            result = new ItemStack(RARE_LOOT[random.nextInt(RARE_LOOT.length)]);
+        } else if (random.nextInt(100) <= commonLootChancePercent) {
             result = new ItemStack(COMMON_LOOT[random.nextInt(COMMON_LOOT.length)]);
         } else {
             LootTable lootTable = Bukkit.getLootTable(LootTables.DESERT_PYRAMID.getKey());
@@ -67,8 +78,9 @@ public class SuspiciousSandListener implements Listener {
 
             LootContext lootContext = new LootContext.Builder(block.getLocation()).build();
             Collection<ItemStack> lootItems = lootTable.populateLoot(random, lootContext);
+            // Diamond horse armor is kept - only the raw diamond item is excluded.
             lootItems.removeIf(itemStack -> switch (itemStack.getType()) {
-                case ENCHANTED_GOLDEN_APPLE, GOLDEN_APPLE -> true;
+                case ENCHANTED_GOLDEN_APPLE, GOLDEN_APPLE, DIAMOND -> true;
                 default -> false;
             });
 

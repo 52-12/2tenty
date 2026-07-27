@@ -2,6 +2,7 @@ package threeadd.glimpsy.util.recipes;
 
 import org.bukkit.NamespacedKey;
 import threeadd.glimpsy.feature.recipes.*;
+import threeadd.glimpsy.feature.tradechest.TradeChestRecipe;
 import threeadd.glimpsy.util.registry.Registry;
 
 import java.util.List;
@@ -12,7 +13,6 @@ public class CustomRecipeRegistry extends Registry<CustomRecipe> {
 
     private CustomRecipeRegistry() {
         register(new BundleRecipe(),
-                new LeatherRecipe(),
                 new StringRecipe(),
                 new GoldHelmetRecipe(),
                 new GoldChestPlateRecipe(),
@@ -37,7 +37,9 @@ public class CustomRecipeRegistry extends Registry<CustomRecipe> {
                 new MyceliumRecipe(),
                 new DirtFromMyceliumRecipe(),
                 new DeepslateRecipe(),
-                new CobblestoneFromDeepslateRecipe());
+                new CobblestoneFromDeepslateRecipe(),
+                new BridgeEggRecipe(),
+                new TradeChestRecipe());
     }
 
     public List<NamespacedKey> getRemovedRecipes() {

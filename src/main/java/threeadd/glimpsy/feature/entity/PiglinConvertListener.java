@@ -17,6 +17,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import threeadd.glimpsy.Glimpsy;
+import threeadd.glimpsy.util.config.ConfigManager;
 
 import java.util.Iterator;
 import java.util.concurrent.ThreadLocalRandom;
@@ -55,7 +56,9 @@ public class PiglinConvertListener implements Listener {
         heldItem.subtract(1);
         zombifiedPiglin.getWorld().playSound(zombifiedPiglin, Sound.ENTITY_ZOMBIE_VILLAGER_CURE, 1.0F, 1.0F);
 
-        int[] cureTicksRemaining = {ThreadLocalRandom.current().nextInt(20, 100)};
+        int minCureTicks = ConfigManager.getInt("piglin-convert.cure-duration-min-ticks", 20);
+        int maxCureTicks = ConfigManager.getInt("piglin-convert.cure-duration-max-ticks", 100);
+        int[] cureTicksRemaining = {ThreadLocalRandom.current().nextInt(minCureTicks, maxCureTicks)};
         Particle.DustOptions dustOptions = new Particle.DustOptions(Color.WHITE, 5);
 
         new BukkitRunnable() {

@@ -1,0 +1,251 @@
+# 2tenty messages and branding. Every user-facing message can be overridden here - a missing
+# key just uses the built-in default, so you only need entries for what you want to change.
+#
+# Messages use MiniMessage formatting (<red>, <#DBC258>, <b>...</b>) plus:
+#   - {placeholders} like {player}, {team}, {name} - filled in by the plugin
+#   - branding color tags (<primary>, <error>, ...) that resolve to the colors set in the
+#     branding section below, so re-theming the whole plugin is a one-place change
+#
+# Run /2tentyreload after editing to apply changes without restarting the server.
+
+branding:
+  # The plugin's display name, used via {name} in help texts - change this (and the tab
+  # section below) to rebrand everything players see
+  name: "2tenty"
+  # The "2tenty" logo colour, shared by the tab list header and the scoreboard title
+  title: "#2881C6"
+  primary: "#DBC258"    # gold - titles, headers, announcements
+  alert: "#DB5858"      # soft red - dramatic broadcasts (secession etc.)
+  success: "green"
+  error: "red"
+  muted: "gray"
+  highlight: "yellow"
+  ally: "aqua"
+
+misc:
+  no-matching-player: "<error>No matching player found"
+  player-only: "<error>You need to be a player for this command"
+
+tab:
+  header-title: "<b><title>2TENTY</b>"
+  header-subtitle: "<#C4C4C4>by 3upman"
+  footer-url: "<#9F9F9F>2tenty.MineHut.gg"
+
+help:
+  category-commands: "View a list of {name}'s custom commands"
+  category-enchantments: "View a list of {name}'s custom enchantments"
+  category-recipes: "View a list of {name}'s custom recipes"
+  category-articles: "View a list of {name}'s community written articles"
+
+teams:
+  # Membership
+  not-on-team: "You aren't on a team"
+  not-on-team-error: "<error>You aren't on a team"
+  already-on-team: "You're already on a team - leave it first with /teams leave"
+  owner-only: "Only the team owner can do that"
+  owner-or-trusted-only: "Only the team owner or trusted members can do that"
+  team-set: "Your team is now: {name}"
+  disbanded: "You disbanded your team"
+  left: "You left your team"
+  members-header: "Team members: "
+  list-header: "<primary>Teams:"
+  no-teams: "<muted>No teams exist yet"
+  # Names
+  name-taken: "A team with that name already exists"
+  name-not-allowed: "<error>That name isn't allowed"
+  name-unparseable: "That name couldn't be parsed - check your color tags"
+  name-decorated: "Team names can't use bold, italic, underline, strikethrough, or obfuscated text"
+  name-empty: "Team names can't be empty"
+  name-too-long: "Team names can't be longer than {max} characters"
+  name-bad-characters: "Team names can only contain letters, numbers, spaces, - and _"
+  # Invites
+  no-invite-permission: "You don't have permission to invite people to your team"
+  already-on-your-team: "{player} is already on your team"
+  invited: "{player} invited you to their team: "
+  invite-sent: "Invited {player} to your team"
+  button-accept: "<green><b>[Accept]</b>"
+  button-deny: "<red><b>[Deny]</b>"
+  no-pending-invite: "You don't have a pending team invite"
+  team-gone: "That team no longer exists"
+  joined: "You joined {team}'s team"
+  invite-declined: "You declined the team invite"
+  invite-mode-set: "Invite permission set to {mode}"
+  # Trust / kick
+  not-on-your-team: "{player} isn't on your team"
+  trusted: "{player} is now trusted to invite"
+  untrusted: "{player} is now no longer trusted to invite"
+  cant-remove-founder: "You can't remove the team founder"
+  no-kick-permission: "You don't have permission to remove people from your team"
+  you-were-removed: "<error>You were removed from your team"
+  member-removed: "Removed {player} from your team"
+  # Alliances
+  no-team-found: "No team found with that name"
+  ally-self: "You can't ally with your own team"
+  already-allied: "Your team is already allied with {team}"
+  both-allied: "Both teams are already in different alliances - have one team leave theirs first"
+  alliance-needs-name: "This alliance needs a name before another team can join - have a member run /team rename, then try again"
+  offer-sent: "Alliance offer sent to {team} - they need to run /team alliance too to confirm it"
+  offer-received: "<primary> has offered your team an alliance"
+  offer-invalid: "That alliance offer is no longer valid"
+  offer-declined: "Alliance offer declined"
+  offer-declined-notice-prefix: "<error>Your alliance offer to "
+  offer-declined-notice-suffix: "<error> was declined"
+  offer-withdrawn: "Alliance offer withdrawn"
+  offer-withdrawn-notice: "<error> withdrew their alliance offer to your team"
+  button-yes: "<green><b>[Yes]</b>"
+  button-no: "<red><b>[No]</b>"
+  now-allied: "Your team is now allied with {team}"
+  not-in-alliance: "Your team isn't in an alliance"
+  not-allied: "Your team isn't allied with anyone"
+  alliance-named: "Your alliance is now named: {name}"
+  alliance-name-taken: "Another alliance already has that name"
+  team-name-conflict: "A team already has that name"
+  announce-formed-prefix: "<#63C14F>Alliance formed: "
+  announce-formed-mid: "<#63C14F> and "
+  announce-formed-suffix: "<#63C14F> are now allied"
+  announce-joined-mid: "<#63C14F> has joined the "
+  announce-joined-suffix: "<#63C14F> alliance!"
+  secession-prefix: "<alert>"
+  secession-suffix: "<alert> has declared secession from its alliance"
+  seceded: "Your team has declared secession and is back on its own"
+  # Friendly fire
+  friendly-fire-alert: "<error>{attacker} hit teammate/ally {victim} (damage reduced)"
+  friendly-kill-warning: "<error>Warning: killing {remaining} more teammate{s} will get you removed from your team"
+  friendly-kill-removed: "<error>You were removed from your team for killing {limit} teammates"
+  friendly-kill-removed-broadcast: "<error>{player} was removed from the team for killing {limit} teammates"
+  ff-alerts-enabled: "Friendly fire alerts are now <success>enabled"
+  ff-alerts-disabled: "Friendly fire alerts are now <error>disabled"
+  # Team chat
+  chat-prefix: "<ally>[Team] </ally>{player}: "
+  chat-enabled: "<success>Team chat enabled - your messages now go to your team only"
+  chat-disabled: "<error>Team chat disabled - your messages go to public chat again"
+  # Shield skins
+  shield-usage: "Usage: /shieldskin [base color] [pattern color]... e.g. /shieldskin red cross white - see /shieldskin colors and /shieldskin patterns for valid options"
+  shield-colors: "Colors: {colors}"
+  shield-patterns: "Patterns: {patterns}"
+  shield-design-taken: "Another team is already using that shield design"
+  shield-updated: "Your team's shield design has been updated"
+  shield-cleared: "Your team's shield design has been cleared"
+  # Staff
+  already-blacklisted: "That name is already blacklisted"
+  blacklisted: "Blacklisted team name: {name}"
+  already-whitelisted: "That name is already whitelisted"
+  whitelisted: "Whitelisted team name: {name}"
+  admin-team-renamed: "Team renamed to: {name}"
+  admin-alliance-renamed: "Alliance renamed to: {name}"
+  replace-no-target: "<error>No team or online player named {target}"
+  force-joined: "{player} is now on team: {name}"
+  replace-no-player: "<error>No online player named {target} - add a new name to rename a team instead"
+  removed-by-staff: "<error>You were removed from your team by staff"
+
+nicknames:
+  unparseable: "That nickname couldn't be parsed - check your color tags"
+  decorated: "Nicknames can't use bold, italic, underline, strikethrough, or obfuscated text"
+  empty: "Nicknames can't be empty"
+  too-long: "Nicknames can't be longer than {max} characters"
+  bad-characters: "Nicknames can only contain letters, numbers, spaces, - and _"
+  must-match-username: "Your nickname must be exactly your real username ({username}), just styled with color tags"
+  set: "Your name is now: "
+  reset: "Your name color was reset"
+
+stats:
+  top-header: "<primary>--- {title} ---"
+  top-empty: "<muted>Nothing recorded yet"
+  top-entry: "<highlight>{position}. <white>{player} <muted>- <white>{value} <muted>{unit}"
+  top-own-rank: "<muted>Your rank: <white>#{rank} <muted>({value} {unit})"
+  stats-header: "<primary>--- {player}'s Stats ---"
+  stats-entry: "<highlight>{label}: <white>{value}"
+
+bridge-egg:
+  limit-one: "<error>You can only carry one Bridge Egg at a time"
+  limit-many: "<error>You can only carry {limit} Bridge Eggs at a time"
+
+anvil:
+  cost-notice: "This anvil upgrade costs you: <#F8DD97>{cost} Levels"
+
+scoreboard:
+  title: "<b><title>{server}</b>"
+  ip: "2tenty.MineHut.gg"
+  # Chosen automatically from the player's /timezone: America/* zones get US date + 12h clock,
+  # everyone else gets European date + 24h clock
+  date-format-eu: "dd/MM/yyyy"
+  date-format-us: "MM/dd/yyyy"
+  time-format-24h: "HH:mm:ss"
+  time-format-12h: "h:mm:ss a"
+  line-date: "<muted>Date <white>{date}"
+  line-time: "<muted>Time <white>{time}"
+  line-kills: "<muted>Kills <white>{kills}"
+  line-deaths: "<muted>Deaths <white>{deaths}"
+  line-fishes: "<muted>Fishes <white>{fishes}"
+  line-reset: "<muted>Map reset <white>{reset}"
+  line-tps: "<muted>TPS <white>{tps}"
+  line-players: "<muted>Players <white>{players}"
+  line-ip: "<primary>{ip}"
+  reset-paused: "Paused"
+  reset-off: "Off"
+  shown: "<success>Scoreboard shown"
+  hidden: "<error>Scoreboard hidden"
+
+map-reset:
+  when-disabled: "<muted>Automatic map resets are turned off"
+  when-paused: "<primary>The map reset countdown is paused at <white>{time}"
+  when-active: "<primary>The map resets in <white>{time}"
+  paused: "<success>Map reset countdown paused at {time}"
+  already-paused: "<error>The map reset countdown is already paused"
+  resumed: "<success>Map reset countdown resumed - resets in {time}"
+  not-paused: "<error>The map reset countdown isn't paused"
+  added: "<success>Added {amount} - the map now resets in {time}"
+  removed: "<success>Removed {amount} - the map now resets in {time}"
+  bad-duration: "<error>Invalid duration '{input}' - use e.g. 2d, 5h, 30m, 45s or 1h30m"
+
+full-reset:
+  done: "<success>Full reset started - the world and every player's inventory were wiped"
+
+timezone:
+  current: "<primary>Your timezone is <white>{zone}"
+  set: "<success>Your timezone is now <white>{zone}"
+  reset: "<success>Your timezone was reset to the server default (<white>{zone}<success>)"
+  invalid: "<error>Unknown timezone '{input}' - type a UTC offset like +0500 or -0800, or an abbreviation like EST, PST, GMT, CET, JST"
+
+antifilter:
+  drop-title: "Anti-Drop"
+  pickup-title: "Anti-Pickup"
+  marker-lore: "<muted>Click to stop protecting this item"
+  disabled: "<error>That feature is turned off"
+
+playtime:
+  value: "<primary>{player}<muted>'s playtime: <white>{playtime}"
+
+trade-chest:
+  chest-title: "Trade Chest"
+  preview-title: "Trade Preview"
+  target-list-title: "Send Trade Offer To..."
+  target-lore: "Click to send a trade offer to {player}'s Trade Chest"
+  placed: "<success>Trade Chest placed - right click it to load items and send trade offers"
+  already-placed: "<error>You already have a Trade Chest placed - break it first"
+  not-yours: "<error>This is {player}'s Trade Chest"
+  broken-by-other: "<error>{player} broke your Trade Chest"
+  no-targets: "<error>No other players have a Trade Chest placed right now"
+  button-send: "<primary>Send a trade offer"
+  button-send-lore: "Pick another player's Trade Chest to offer your items to"
+  button-outgoing: "Offer sent to {player}"
+  button-outgoing-lore: "<error>Click to cancel the offer"
+  button-accept-offer: "<green>Accept trade offer from {player}"
+  button-deny-offer: "<red>Deny trade offer"
+  button-open-preview: "<green>Open the trade preview"
+  button-cancel-trade: "<red>Cancel the trade"
+  accept-pane: "<green>{player} - Accept"
+  accept-pane-done: "<green>Accepted - waiting for the other side"
+  accept-pane-hint: "<muted>Only {player}'s side can click this"
+  deny-pane: "<red>{player} - Deny"
+  offer-sent: "<success>Trade offer sent to {player}'s Trade Chest"
+  offer-received: "<primary>{player} sent a trade offer to your Trade Chest - open it to accept or deny"
+  offer-accepted: "<success>{player} accepted your trade offer - open your Trade Chest to review the trade"
+  already-trading: "<error>This Trade Chest is already in an active trade - finish or cancel it first"
+  target-busy: "<error>{player} is already in an active trade"
+  accepts-reset: "<error>Trade contents changed - all accepts were reset, review the trade again"
+  cancelled: "<error>The trade was cancelled by {player}"
+  cancelled-broken: "<error>The trade was cancelled - a Trade Chest was broken"
+  trade-complete: "<success>Trade accepted! Deliveries arrive at your Trade Chest one stack every {minutes} minutes"
+  delivered: "<success>Delivered to your Trade Chest: {amount}x {item} from {player}"
+  delivery-cancelled: "<error>A delivery didn't fit in {recipient}'s Trade Chest - the remaining {count} item stack(s) were returned to {sender}"

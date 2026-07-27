@@ -11,6 +11,7 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.potion.PotionType;
+import threeadd.glimpsy.util.config.ConfigManager;
 import threeadd.glimpsy.util.inventory.ItemBuilder;
 
 import java.util.Map;
@@ -19,11 +20,16 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class LuckBottleListener implements Listener {
 
+    // The fish pool itself is structural - only each fish's success chance is a balance knob.
     private static final Map<Material, Double> luckMap = Map.of(
             Material.COD, 0.2,
             Material.PUFFERFISH, 0.5,
             Material.TROPICAL_FISH, 0.8
     );
+
+    private static double chanceFor(Material fish, double defaultChance) {
+        return ConfigManager.getDouble("luck-bottle.chances." + fish.name().toLowerCase(), defaultChance);
+    }
 
     private static boolean isLuckApplicable(ItemStack item) {
         return luckMap.containsKey(item.getType());
@@ -54,7 +60,7 @@ public class LuckBottleListener implements Listener {
         if (!isWaterBottle(clickedItem)) return;
 
         Material fishType = hoverItem.getType();
-        double chance = luckMap.get(fishType);
+        double chance = chanceFor(fishType, luckMap.get(fishType));
         hoverItem.subtract(1); // consume the fish on every roll, not just on success
 
         Random random = ThreadLocalRandom.current();

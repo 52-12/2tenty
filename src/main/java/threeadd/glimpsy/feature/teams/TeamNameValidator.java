@@ -4,6 +4,8 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import threeadd.glimpsy.util.config.ConfigManager;
+import threeadd.glimpsy.util.config.Messages;
 
 import java.util.regex.Pattern;
 
@@ -16,7 +18,9 @@ import java.util.regex.Pattern;
  */
 public class TeamNameValidator {
 
-    public static final int MAX_LENGTH = 12;
+    private static int maxLength() {
+        return ConfigManager.getInt("teams.name-max-length", 12);
+    }
 
     private static final Pattern SAFE_CHARACTERS = Pattern.compile("^[a-zA-Z0-9 _-]+$");
 
@@ -40,26 +44,35 @@ public class TeamNameValidator {
     }
 
     public static Result validate(String rawInput) {
+        return validate(rawInput, true);
+    }
+
+    /**
+     * @param enforceLength false skips the max-length check entirely - only for staff overrides
+     *                      like /team replace, never for a player setting their own team's name.
+     */
+    public static Result validate(String rawInput, boolean enforceLength) {
         Component parsed;
         try {
             parsed = MiniMessage.miniMessage().deserialize(rawInput);
         } catch (Exception e) {
-            return Result.fail("That name couldn't be parsed - check your color tags");
+            return Result.fail(Messages.get("teams.name-unparseable", "That name couldn't be parsed - check your color tags"));
         }
 
         if (hasDisallowedDecoration(parsed))
-            return Result.fail("Team names can't use bold, italic, underline, strikethrough, or obfuscated text");
+            return Result.fail(Messages.get("teams.name-decorated", "Team names can't use bold, italic, underline, strikethrough, or obfuscated text"));
 
         String plainText = PlainTextComponentSerializer.plainText().serialize(parsed);
 
         if (plainText.isBlank())
-            return Result.fail("Team names can't be empty");
+            return Result.fail(Messages.get("teams.name-empty", "Team names can't be empty"));
 
-        if (plainText.length() > MAX_LENGTH)
-            return Result.fail("Team names can't be longer than " + MAX_LENGTH + " characters");
+        if (enforceLength && plainText.length() > maxLength())
+            return Result.fail(Messages.get("teams.name-too-long", "Team names can't be longer than {max} characters",
+                    "max", String.valueOf(maxLength())));
 
         if (!SAFE_CHARACTERS.matcher(plainText).matches())
-            return Result.fail("Team names can only contain letters, numbers, spaces, - and _");
+            return Result.fail(Messages.get("teams.name-bad-characters", "Team names can only contain letters, numbers, spaces, - and _"));
 
         return Result.ok(parsed, plainText);
     }

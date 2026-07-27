@@ -2,14 +2,24 @@ package threeadd.glimpsy.util.hologram;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
+import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
+import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
+import threeadd.glimpsy.Glimpsy;
 import threeadd.glimpsy.util.ScheduleUtil;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Hologram {
+
+    // Every hologram currently in the world, regardless of what feature created it - lets
+    // spectator visibility be enforced generically here instead of duplicated per feature.
+    private static final Set<Hologram> ACTIVE = ConcurrentHashMap.newKeySet();
 
     private final List<HologramLine> lines = new ArrayList<>();
     private final List<BukkitTask> activeTasks = new ArrayList<>();
@@ -19,6 +29,28 @@ public class Hologram {
 
     public Hologram(Location baseLocation) {
         this.baseLocation = baseLocation.clone();
+        ACTIVE.add(this);
+    }
+
+    // Hides/shows every line of every hologram for one viewer, based on their current gamemode -
+    // call whenever a player's gamemode changes (and on join, in case they connect already in
+    // spectator) so spectators never see any hologram, existing or future.
+    public static void syncVisibility(Player viewer) {
+        boolean hide = viewer.getGameMode() == GameMode.SPECTATOR;
+
+        for (Hologram hologram : ACTIVE)
+            for (HologramLine line : hologram.getLines())
+                if (hide) viewer.hideEntity(Glimpsy.getInstance(), line.getDisplay());
+                else viewer.showEntity(Glimpsy.getInstance(), line.getDisplay());
+    }
+
+    // New lines are separate entities that were never covered by an earlier syncVisibility call -
+    // hide them from any already-spectating viewers immediately instead of waiting for their next
+    // gamemode change (which may never come).
+    private static void hideFromSpectators(HologramLine line) {
+        for (Player viewer : Bukkit.getOnlinePlayers())
+            if (viewer.getGameMode() == GameMode.SPECTATOR)
+                viewer.hideEntity(Glimpsy.getInstance(), line.getDisplay());
     }
 
     // New lines spawn at baseLocation before being mounted onto the chain - if it's gone stale
@@ -48,6 +80,7 @@ public class Hologram {
 
         lines.add(line);
         rebuild();
+        hideFromSpectators(line);
         return line;
     }
 
@@ -171,6 +204,7 @@ public class Hologram {
     }
 
     public void remove() {
+        ACTIVE.remove(this);
 
         for (BukkitTask task : activeTasks) {
             if (task != null) task.cancel();

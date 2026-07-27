@@ -7,35 +7,32 @@ import io.papermc.paper.command.brigadier.Commands;
 import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
 import threeadd.glimpsy.util.command.CustomCommand;
+import threeadd.glimpsy.util.config.Messages;
 import threeadd.glimpsy.util.text.ComponentParser;
 
 public class RightClickCraftingCommand extends CustomCommand {
 
     @SuppressWarnings("SameReturnValue")
     private static int run(CommandContext<CommandSourceStack> ctx) {
-        boolean newState = !InteractCraftingListener.isEnabled();
-        InteractCraftingListener.setEnabled(newState);
+        Player player = getPlayer(ctx);
+        if (player == null) return SUCCESS;
 
-        ctx.getSource().getSender().sendMessage(ComponentParser.parseRichString(
-                "Right click crafting is now " + (newState ? "<green>enabled" : "<red>disabled")));
+        boolean newState = InteractCraftingListener.toggle(player);
+        player.sendMessage(newState
+                ? Messages.msg("misc.rightclick-crafting-enabled", "Right click crafting is now <success>enabled")
+                : Messages.msg("misc.rightclick-crafting-disabled", "Right click crafting is now <error>disabled"));
 
         return SUCCESS;
     }
 
     @Override
     public Component createUsage() {
-        return ComponentParser.parseRichString("Toggle whether right-clicking with a crafting table in hand opens the crafting GUI");
+        return ComponentParser.parseRichString("Toggle whether sneak-right-clicking with a crafting table in hand opens the crafting GUI for you");
     }
 
     @Override
     public LiteralArgumentBuilder<CommandSourceStack> create() {
         return Commands.literal("rightclickcrafting")
-                .requires(source -> source.getSender().hasPermission("2tenty.command.rightclickcrafting"))
                 .executes(RightClickCraftingCommand::run);
-    }
-
-    @Override
-    public boolean isVisibleTo(Player viewer) {
-        return viewer.hasPermission("2tenty.command.rightclickcrafting");
     }
 }

@@ -33,7 +33,9 @@ public class TeamRepository extends Repository<TeamData> {
                     "id VARCHAR(36) PRIMARY KEY," +
                     "name TEXT NOT NULL," +
                     "owner VARCHAR(36) NOT NULL," +
-                    "invite_mode VARCHAR(16) NOT NULL DEFAULT 'OWNER_ONLY'" +
+                    "invite_mode VARCHAR(16) NOT NULL DEFAULT 'OWNER_ONLY'," +
+                    "alliance_id VARCHAR(36)," +
+                    "alliance_offer_to VARCHAR(36)" +
                     ")");
             stmt.execute("CREATE TABLE IF NOT EXISTS team_members (" +
                     "uuid VARCHAR(36) PRIMARY KEY," +
@@ -48,6 +50,28 @@ public class TeamRepository extends Repository<TeamData> {
                     "team_id VARCHAR(36) PRIMARY KEY," +
                     "patterns TEXT NOT NULL" +
                     ")");
+            stmt.execute("CREATE TABLE IF NOT EXISTS alliances (" +
+                    "id VARCHAR(36) PRIMARY KEY," +
+                    "name TEXT" +
+                    ")");
+            stmt.execute("CREATE TABLE IF NOT EXISTS team_name_rules (" +
+                    "name TEXT PRIMARY KEY," +
+                    "rule VARCHAR(16) NOT NULL" +
+                    ")");
+        }
+
+        // CREATE TABLE IF NOT EXISTS is a no-op on a database from before these columns existed -
+        // add them separately, ignoring the failure if already there. (Superseded the old,
+        // now-unused allied_team column from before multi-team alliances existed.)
+        addColumnIfMissing(conn, "alliance_id");
+        addColumnIfMissing(conn, "alliance_offer_to");
+    }
+
+    private void addColumnIfMissing(Connection conn, String column) {
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute("ALTER TABLE teams ADD COLUMN " + column + " VARCHAR(36)");
+        } catch (SQLException ignored) {
+            // Column already exists.
         }
     }
 
@@ -91,6 +115,13 @@ public class TeamRepository extends Repository<TeamData> {
                     TeamData team = new TeamData(id, rs.getString("name"), UUID.fromString(rs.getString("owner")));
                     team.getMembers().clear(); // constructor auto-adds owner - membership rows are authoritative
                     team.setInviteMode(TeamData.InviteMode.valueOf(rs.getString("invite_mode")));
+
+                    String allianceId = rs.getString("alliance_id");
+                    if (allianceId != null) team.setAllianceId(UUID.fromString(allianceId));
+
+                    String allianceOfferTo = rs.getString("alliance_offer_to");
+                    if (allianceOfferTo != null) team.setAllianceOfferTo(UUID.fromString(allianceOfferTo));
+
                     teams.put(id, team);
                 }
             }
@@ -126,8 +157,10 @@ public class TeamRepository extends Repository<TeamData> {
     }
 
     public void saveTeamSync(TeamData team) {
-        executeUpdate("REPLACE INTO teams (id, name, owner, invite_mode) VALUES (?, ?, ?, ?)",
-                team.getId().toString(), team.getRawName(), team.getOwner().toString(), team.getInviteMode().name());
+        executeUpdate("REPLACE INTO teams (id, name, owner, invite_mode, alliance_id, alliance_offer_to) VALUES (?, ?, ?, ?, ?, ?)",
+                team.getId().toString(), team.getRawName(), team.getOwner().toString(), team.getInviteMode().name(),
+                team.getAllianceId() == null ? null : team.getAllianceId().toString(),
+                team.getAllianceOfferTo() == null ? null : team.getAllianceOfferTo().toString());
 
         executeUpdate("DELETE FROM team_members WHERE team_id = ?", team.getId().toString());
         for (UUID member : team.getMembers())
@@ -156,5 +189,70 @@ public class TeamRepository extends Repository<TeamData> {
 
     public void runAsyncDelete(UUID teamId) {
         runAsync(() -> deleteTeamSync(teamId));
+    }
+
+    // Alliances - membership itself lives on each TeamData's alliance_id, this table only
+    // exists to hold the shared name once one is set.
+
+    public Map<UUID, Alliance> loadAlliancesSync() {
+        Map<UUID, Alliance> alliances = new HashMap<>();
+
+        try (Connection conn = Glimpsy.getDataBase().getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT * FROM alliances")) {
+            while (rs.next()) {
+                UUID id = UUID.fromString(rs.getString("id"));
+                Alliance alliance = new Alliance(id);
+                alliance.setRawName(rs.getString("name"));
+                alliances.put(id, alliance);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to load alliances", e);
+        }
+
+        return alliances;
+    }
+
+    public void saveAllianceSync(Alliance alliance) {
+        executeUpdate("REPLACE INTO alliances (id, name) VALUES (?, ?)",
+                alliance.getId().toString(), alliance.getRawName());
+    }
+
+    public void deleteAllianceSync(UUID allianceId) {
+        executeUpdate("DELETE FROM alliances WHERE id = ?", allianceId.toString());
+    }
+
+    public void runAsyncSaveAlliance(Alliance alliance) {
+        runAsync(() -> saveAllianceSync(alliance));
+    }
+
+    public void runAsyncDeleteAlliance(UUID allianceId) {
+        runAsync(() -> deleteAllianceSync(allianceId));
+    }
+
+    // Name rules - admin-set per-name overrides on top of SimpleWordFilter. Names are stored
+    // lowercased; rule is "BLACKLIST" or "WHITELIST".
+
+    public Map<String, String> loadNameRulesSync() {
+        Map<String, String> rules = new HashMap<>();
+
+        try (Connection conn = Glimpsy.getDataBase().getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT * FROM team_name_rules")) {
+            while (rs.next())
+                rules.put(rs.getString("name"), rs.getString("rule"));
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to load team name rules", e);
+        }
+
+        return rules;
+    }
+
+    public void runAsyncSaveNameRule(String name, String rule) {
+        runAsync(() -> executeUpdate("REPLACE INTO team_name_rules (name, rule) VALUES (?, ?)", name, rule));
+    }
+
+    public void runAsyncDeleteNameRule(String name) {
+        runAsync(() -> executeUpdate("DELETE FROM team_name_rules WHERE name = ?", name));
     }
 }

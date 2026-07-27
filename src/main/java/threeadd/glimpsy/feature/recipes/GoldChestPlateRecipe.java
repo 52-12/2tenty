@@ -25,4 +25,9 @@ public class GoldChestPlateRecipe extends CustomRecipe {
                 50,
                 300);
     }
+
+    @Override
+    public boolean isListed() {
+        return false; // shown as part of GoldHelmetRecipe's /recipes entry instead
+    }
 }

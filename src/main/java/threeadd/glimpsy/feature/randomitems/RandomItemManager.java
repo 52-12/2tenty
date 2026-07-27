@@ -12,6 +12,7 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import threeadd.glimpsy.util.ScheduleUtil;
+import threeadd.glimpsy.util.config.ConfigManager;
 import threeadd.glimpsy.util.manager.ListeningManager;
 import threeadd.glimpsy.util.text.ComponentParser;
 
@@ -34,12 +35,21 @@ public class RandomItemManager extends ListeningManager {
     private static final Logger log = LoggerFactory.getLogger(RandomItemManager.class);
     private BukkitTask task;
 
+    // The material pool itself (RANDOM_ITEMS' keys) is structural - only each material's weight
+    // is a balance knob, defaulting to whatever's hardcoded in the map above.
+    private static int weightFor(Material material, int defaultWeight) {
+        return ConfigManager.getInt("random-items.weights." + material.name().toLowerCase(), defaultWeight);
+    }
+
     private static Material getRandomItem() {
-        int totalWeight = RANDOM_ITEMS.values().stream().mapToInt(Integer::intValue).sum();
+        int totalWeight = 0;
+        for (Map.Entry<Material, Integer> entry : RANDOM_ITEMS.entrySet())
+            totalWeight += weightFor(entry.getKey(), entry.getValue());
+
         int random = ThreadLocalRandom.current().nextInt(totalWeight);
 
         for (Map.Entry<Material, Integer> entry : RANDOM_ITEMS.entrySet()) {
-            random -= entry.getValue();
+            random -= weightFor(entry.getKey(), entry.getValue());
             if (random < 0) {
                 return entry.getKey();
             }
@@ -56,7 +66,7 @@ public class RandomItemManager extends ListeningManager {
     public void onEnable() {
         task = ScheduleUtil.scheduleSync(this::tick,
                 0,
-                5,
+                ConfigManager.getInt("random-items.tick-interval-seconds", 5),
                 ScheduleUtil.Unit.SECOND);
     }
 
@@ -75,7 +85,7 @@ public class RandomItemManager extends ListeningManager {
             if (!randomItemInfo.isEnabled(material))
                 continue;
 
-            if (!player.getInventory().addItem(item).isEmpty()) {
+            if (!player.getInventory().addItem(item).isEmpty() && randomItemInfo.isFullInventoryAlertEnabled()) {
                 player.sendActionBar(ComponentParser.parseRichString(
                         "<red>Your inventory is full - free up space to keep receiving items"));
             }
@@ -91,7 +101,7 @@ public class RandomItemManager extends ListeningManager {
             RandomItemsInfo info = randomItemInfoMap.get(player.getUniqueId());
 
             // Don't save useless data (If player joins without data it takes default states)
-            if (info == null || info.getStates().equals(RandomItemsInfo.createDefaultStates())) {
+            if (info == null || info.isDefault()) {
                 RandomItemsRepository.getInstance().deleteSync(player.getUniqueId());
                 log.info("Sync deleted default items for {}", player.getUniqueId());
                 return;

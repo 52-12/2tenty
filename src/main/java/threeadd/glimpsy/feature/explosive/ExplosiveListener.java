@@ -6,6 +6,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.inventory.ItemStack;
 import threeadd.glimpsy.feature.simple.TNTTrailListener;
+import threeadd.glimpsy.util.config.ConfigManager;
 import threeadd.glimpsy.util.enchantments.CustomEnchantmentRegistry;
 
 public class ExplosiveListener implements Listener {
@@ -22,7 +23,7 @@ public class ExplosiveListener implements Listener {
             return;
 
         int level = bow.getEnchantmentLevel(CustomEnchantmentRegistry.INSTANCE.EXPLOSIVE.toBukkitEnchantment());
-        int blocksAffected = level * 3;
+        int blocksAffected = level * ConfigManager.getInt("explosive-enchant.blocks-per-level", 3);
 
         TNTTrailListener.explode(arrow.getLocation(), blocksAffected);
         arrow.remove();

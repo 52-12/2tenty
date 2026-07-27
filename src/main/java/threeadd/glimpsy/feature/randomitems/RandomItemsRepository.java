@@ -33,6 +33,11 @@ public class RandomItemsRepository extends Repository<RandomItemsInfo> {
         }
     }
 
+    // Only the disabled materials and the alert flag are ever non-default, so that's all that's
+    // stored - not the full state map.
+    private record StoredData(List<Material> disabled, boolean alertsEnabled) {
+    }
+
     public void saveSync(RandomItemsInfo info) {
         String sql = "REPLACE INTO player_items (uuid, data) VALUES (?, ?)";
         executeUpdate(sql, info.getOwnerId().toString(), serialize(info));
@@ -46,7 +51,7 @@ public class RandomItemsRepository extends Repository<RandomItemsInfo> {
                 disabledMaterials.add(material);
         });
 
-        return new Gson().toJson(disabledMaterials);
+        return new Gson().toJson(new StoredData(disabledMaterials, info.isFullInventoryAlertEnabled()));
     }
 
     public Optional<RandomItemsInfo> loadSync(UUID uuid) {
@@ -58,13 +63,15 @@ public class RandomItemsRepository extends Repository<RandomItemsInfo> {
 
         UUID ownerId = UUID.fromString(rs.getString("uuid"));
 
-        List<Material> disabledItems = new Gson().fromJson(
-                json,
-                new TypeToken<List<Material>>() {
-                }.getType()
-        );
+        // Rows saved before the alert flag existed are just a bare JSON array of materials.
+        if (json.stripLeading().startsWith("[")) {
+            List<Material> disabledItems = new Gson().fromJson(json, new TypeToken<List<Material>>() {
+            }.getType());
+            return new RandomItemsInfo(ownerId, disabledItems, true);
+        }
 
-        return new RandomItemsInfo(ownerId, disabledItems);
+        StoredData data = new Gson().fromJson(json, StoredData.class);
+        return new RandomItemsInfo(ownerId, data.disabled(), data.alertsEnabled());
     }
 
     public void deleteSync(UUID uuid) {

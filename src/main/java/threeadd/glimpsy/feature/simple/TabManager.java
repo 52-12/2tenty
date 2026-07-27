@@ -22,6 +22,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import threeadd.glimpsy.feature.nickname.NicknameManager;
 import threeadd.glimpsy.feature.teams.TeamManager;
 import threeadd.glimpsy.util.ScheduleUtil;
+import threeadd.glimpsy.util.config.Messages;
 import threeadd.glimpsy.util.manager.ListeningManager;
 import threeadd.glimpsy.util.text.ComponentParser;
 
@@ -48,12 +49,9 @@ public class TabManager extends ListeningManager {
     private static Component createHeader() {
         return Component.newline()
                 .append(PADDING)
-                .append(Component.text("2TENTY")
-                        .decorate(TextDecoration.BOLD)
-                        .color(TextColor.color(0x2881C6)))
+                .append(Messages.msg("tab.header-title", "<b><#2881C6>2TENTY</b>"))
                 .append(PADDING).appendNewline()
-                .append(Component.text("by 3upman")
-                        .color(TextColor.color(0xC4C4C4)))
+                .append(Messages.msg("tab.header-subtitle", "<#C4C4C4>by 3upman"))
                 .appendNewline();
     }
 
@@ -63,7 +61,6 @@ public class TabManager extends ListeningManager {
 
         TextColor labelColor = TextColor.color(0xBCBCBC);
         TextColor valueColor = TextColor.color(0x79ADD6);
-        TextColor urlColor = TextColor.color(0x9F9F9F);
 
         Component statusLine = Component.empty()
                 .append(Component.text("TPS ").color(labelColor))
@@ -71,8 +68,7 @@ public class TabManager extends ListeningManager {
                 .append(Component.text("   Players ").color(labelColor))
                 .append(Component.text(players).color(valueColor));
 
-        Component url = Component.text("2tenty.MineHut.gg")
-                .color(urlColor);
+        Component url = Messages.msg("tab.footer-url", "<#9F9F9F>2tenty.MineHut.gg");
 
         return Component.newline()
                 .append(statusLine)

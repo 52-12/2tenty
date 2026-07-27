@@ -1,0 +1,194 @@
+# 2tenty gameplay-balance config. Structural things (permissions, command names, database
+# schema, item/material pools) are NOT here - only tunable numbers: radii, percentages,
+# multipliers, chances, limits, cooldowns.
+#
+# Run /2tentyreload after editing to apply changes without restarting the server.
+
+tnt:
+  explosion-radius: 12.0
+  # Scales TNT damage dealt to players (after distance falloff) - block destruction is
+  # unaffected. 1.0 = vanilla, 0.5 = half damage
+  player-damage-multiplier: 0.5
+  overall-max-trail-blocks: 1000
+  trail-extension: 60
+  wave-delay-ticks: 4
+
+bridge-egg:
+  # How many Bridge Eggs one player can carry at a time (counted anywhere in their inventory,
+  # including inside bundles and carried shulker boxes)
+  max-per-player: 1
+  max-length: 128
+  full-stack-required: 64
+  placement-delay-ticks: 3
+  recent-placement-window-minutes: 10
+  clear-delay-seconds: 45
+  clear-batch-size: 3
+  clear-step-delay-ticks: 2
+  max-clear-blocks: 5000
+
+anvil:
+  # true removes vanilla's 40-level "Too Expensive" cap (a chat message shows the real cost
+  # once it passes 40, since the GUI hides it)
+  remove-too-expensive-cap: true
+  # Multiplies every anvil operation's level cost (1.0 = vanilla)
+  cost-multiplier: 1.0
+  # Flat level cost for every anvil operation, ignoring vanilla's calculation and the
+  # multipliers (-1 = disabled)
+  flat-cost: -1
+  # Hard cap on the final level cost (-1 = no cap)
+  max-cost: -1
+  # true stops the hidden per-item penalty that doubles with every anvil use and makes
+  # repeated anvil work spiral toward unaffordable
+  disable-cost-doubling: false
+  # Per-item multipliers applied on top of cost-multiplier, keyed by the result item's
+  # material name (any item not listed uses 1.0)
+  item-multipliers:
+    # netherite_sword: 2.0
+    # enchanted_book: 0.5
+  # Flat level cost when the result is this item, replacing vanilla's calculation and all
+  # multipliers for that item. Takes priority over flat-cost; items not listed fall back to
+  # flat-cost (if set) or the multiplier calculation.
+  item-flat-costs:
+    # netherite_chestplate: 10
+    # enchanted_book: 3
+
+stats:
+  top-list-size: 10
+
+scoreboard:
+  # false turns off the sidebar scoreboard for everyone
+  enabled: true
+  update-interval-seconds: 1
+
+map-reset:
+  # false turns off the scheduled automatic reset entirely (/mapreset still works manually,
+  # and /mapreset pause|resume control the countdown)
+  enabled: true
+  # Hours between automatic resets (72 = 3 days)
+  interval-hours: 72
+
+anti-filter:
+  # false turns off /antidrop and /antipickup (existing filters stop being enforced too)
+  enabled: true
+
+trade-chest:
+  # false disables the whole feature: no offers, GUIs, or deliveries (placed chests act like
+  # normal ender chests). The crafting recipe follows this on the next restart.
+  enabled: true
+  # How long each item stack takes to arrive after a trade is accepted - deliveries land one
+  # stack at a time, this many minutes apart
+  delivery-interval-minutes: 5
+
+trident:
+  # false strips tridents from all mob death drops (Drowned are the only vanilla source),
+  # making them unobtainable. Tridents players already own are unaffected.
+  obtainable: false
+
+seagrass:
+  # false strips the seagrass item from shearing/silk-touching seagrass or tall seagrass (the
+  # only vanilla source), making it unobtainable. Seagrass players already own is unaffected.
+  obtainable: false
+
+teams:
+  name-max-length: 12
+  invite-expiry-minutes: 5
+  ally-damage-multiplier: 0.25
+  ally-knockback-multiplier: 0.5
+  friendly-kill-limit: 3
+
+nicknames:
+  max-length: 24
+
+chat:
+  proximity-fade-max-distance: 300.0
+
+guardian-fishing:
+  fish-guardian-chance: 0.05
+  elder-guardian-chance: 0.15
+  trim-template-drop-chance: 0.3
+  trimmed-armor-piece-drop-chance: 0.02
+  elder-luck-duration-seconds: 300
+  regular-luck-duration-seconds: 120
+  damaged-armor-max-durability-fraction: 0.5
+
+charged-creeper-fishing:
+  catch-chance: 0.015
+  explosive-book-drop-chance: 0.225
+
+player-fishing:
+  catch-chance: 0.001
+
+creeper-spawn:
+  cancel-chance: 0.5
+
+suspicious-sand:
+  drop-chance-on-break: 0.5
+  # Rolled first - a rare chance to get Flint or Quartz instead of the usual common/rare loot
+  rare-loot-chance-percent: 3.0
+  common-loot-chance-percent: 50
+
+suspicious-gravel:
+  common-loot-chance-percent: 98
+
+void-instakill:
+  damage-amount: 10000.0
+
+random-items:
+  tick-interval-seconds: 5
+  weights:
+    iron_nugget: 1
+    dirt: 2
+    cobblestone: 5
+    oak_planks: 4
+
+explosive-enchant:
+  blocks-per-level: 3
+  # anvil-cost, max-level, weight, and enchant-cost aren't here - they're read during Paper's
+  # plugin bootstrap phase (see ExplosiveEnchantment#createInfo), before config.yml is loaded,
+  # so they stay hardcoded in code instead.
+
+guardian:
+  luck-duration-seconds: 240
+  heart-of-the-sea-base-chance-percent: 30
+  heart-of-the-sea-per-looting-level-percent: 11.667
+
+piglin-convert:
+  cure-duration-min-ticks: 20
+  cure-duration-max-ticks: 100
+
+piglin-skull:
+  damage-multiplier: 2.5
+
+skeleton-skull:
+  reflect-cooldown-seconds: 3
+  reduced-arrow-damage: 1
+
+mud-clay:
+  interaction-reach-blocks: 4
+  cooldown-ticks: 5
+  suspicious-sand-chance: 0.4
+
+lightning-rod:
+  cooldown-ticks: 100
+
+ender-pearl-debuff:
+  cooldown-ticks: 200
+
+luck-bottle:
+  chances:
+    cod: 0.2
+    pufferfish: 0.5
+    tropical_fish: 0.8
+
+saddle-ride:
+  cooldown-ticks: 20
+  mount-delay-ticks: 20
+
+nautilus-shell:
+  cooldown-ticks: 20
+
+hat:
+  cooldown-ticks: 20
+
+shield-skin:
+  reapply-interval-seconds: 1

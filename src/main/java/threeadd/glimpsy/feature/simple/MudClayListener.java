@@ -12,6 +12,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionType;
+import threeadd.glimpsy.util.config.ConfigManager;
 
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -29,7 +30,8 @@ public class MudClayListener implements Listener {
     public void onConsume(PlayerItemConsumeEvent event) {
         if (!isWaterBottle(event.getItem())) return;
 
-        Block target = event.getPlayer().getTargetBlockExact(4);
+        int reach = ConfigManager.getInt("mud-clay.interaction-reach-blocks", 4);
+        Block target = event.getPlayer().getTargetBlockExact(reach);
         if (target == null) return;
 
         switch (target.getType()) {
@@ -48,7 +50,7 @@ public class MudClayListener implements Listener {
 
         Player player = event.getPlayer();
         if (player.getCooldown(Material.GLASS_BOTTLE) > 0) return;
-        player.setCooldown(Material.GLASS_BOTTLE, 5);
+        player.setCooldown(Material.GLASS_BOTTLE, ConfigManager.getInt("mud-clay.cooldown-ticks", 5));
 
         used.setType(Material.GLASS_BOTTLE);
         block.setType(Material.CLAY);
@@ -69,10 +71,11 @@ public class MudClayListener implements Listener {
 
         Player player = event.getPlayer();
         if (player.getCooldown(Material.GLASS_BOTTLE) > 0) return;
-        player.setCooldown(Material.GLASS_BOTTLE, 5);
+        player.setCooldown(Material.GLASS_BOTTLE, ConfigManager.getInt("mud-clay.cooldown-ticks", 5));
 
+        int suspiciousSandChancePercent = (int) (ConfigManager.getDouble("mud-clay.suspicious-sand-chance", 0.4) * 100);
         used.setType(Material.GLASS_BOTTLE);
-        block.setType(ThreadLocalRandom.current().nextInt(100) <= 40 ? Material.SUSPICIOUS_SAND : Material.SAND);
+        block.setType(ThreadLocalRandom.current().nextInt(100) <= suspiciousSandChancePercent ? Material.SUSPICIOUS_SAND : Material.SAND);
 
         player.swingMainHand();
         player.playSound(player, Sound.ITEM_BOTTLE_EMPTY, 1.0F, 1.0F);

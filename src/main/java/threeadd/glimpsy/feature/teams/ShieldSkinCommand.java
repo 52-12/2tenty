@@ -8,15 +8,16 @@ import io.papermc.paper.command.brigadier.Commands;
 import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
 import threeadd.glimpsy.util.command.CustomCommand;
+import threeadd.glimpsy.util.config.Messages;
 import threeadd.glimpsy.util.text.ComponentParser;
 
 public class ShieldSkinCommand extends CustomCommand {
 
     @SuppressWarnings("SameReturnValue")
     private static int usage(CommandContext<CommandSourceStack> ctx) {
-        ctx.getSource().getSender().sendMessage(ComponentParser.parseRichString(
-                "Usage: /shieldskin <color> [pattern color]... e.g. /shieldskin red cross white - " +
-                        "see /shieldskin colors and /shieldskin patterns for valid options"));
+        ctx.getSource().getSender().sendMessage(Messages.msg("teams.shield-usage",
+                "Usage: /shieldskin [base color] [pattern color]... e.g. /shieldskin red cross white - "
+                        + "see /shieldskin colors and /shieldskin patterns for valid options"));
         return SUCCESS;
     }
 
@@ -29,12 +30,13 @@ public class ShieldSkinCommand extends CustomCommand {
 
         ShieldSkinDesignParser.Result parsed = ShieldSkinDesignParser.parse(raw);
         if (!parsed.valid()) {
-            player.sendMessage(ComponentParser.parseRichString("<red>" + parsed.errorMessage()));
+            player.sendMessage(ComponentParser.parseRichString(Messages.brand("<error>" + parsed.errorMessage())));
             return SUCCESS;
         }
 
         TeamManager.Result result = TeamManager.setShieldSkin(player, parsed.patterns());
-        player.sendMessage(ComponentParser.parseRichString((result.success() ? "<green>" : "<red>") + result.message()));
+        player.sendMessage(ComponentParser.parseRichString(
+                Messages.brand((result.success() ? "<success>" : "<error>") + result.message())));
         return SUCCESS;
     }
 
@@ -44,19 +46,22 @@ public class ShieldSkinCommand extends CustomCommand {
         if (player == null) return SUCCESS;
 
         TeamManager.Result result = TeamManager.clearShieldSkin(player);
-        player.sendMessage(ComponentParser.parseRichString((result.success() ? "<green>" : "<red>") + result.message()));
+        player.sendMessage(ComponentParser.parseRichString(
+                Messages.brand((result.success() ? "<success>" : "<error>") + result.message())));
         return SUCCESS;
     }
 
     @SuppressWarnings("SameReturnValue")
     private static int listColors(CommandContext<CommandSourceStack> ctx) {
-        ctx.getSource().getSender().sendMessage(ComponentParser.parseRichString("Colors: " + ShieldSkinDesignParser.listColors()));
+        ctx.getSource().getSender().sendMessage(Messages.msg("teams.shield-colors",
+                "Colors: {colors}", "colors", ShieldSkinDesignParser.listColors()));
         return SUCCESS;
     }
 
     @SuppressWarnings("SameReturnValue")
     private static int listPatterns(CommandContext<CommandSourceStack> ctx) {
-        ctx.getSource().getSender().sendMessage(ComponentParser.parseRichString("Patterns: " + ShieldSkinDesignParser.listPatterns()));
+        ctx.getSource().getSender().sendMessage(Messages.msg("teams.shield-patterns",
+                "Patterns: {patterns}", "patterns", ShieldSkinDesignParser.listPatterns()));
         return SUCCESS;
     }
 

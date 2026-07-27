@@ -11,10 +11,15 @@ import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import threeadd.glimpsy.util.config.ConfigManager;
 
 import java.util.concurrent.ThreadLocalRandom;
 
 public class GuardianListener implements Listener {
+
+    private static int luckDurationTicks() {
+        return ConfigManager.getInt("guardian.luck-duration-seconds", 240) * 20;
+    }
 
     @EventHandler
     public void onElderGuardianDeath(EntityDeathEvent event) {
@@ -22,7 +27,9 @@ public class GuardianListener implements Listener {
         if (!(event.getEntity().getKiller() instanceof Player player)) return;
 
         int lootingLevel = player.getInventory().getItemInMainHand().getEnchantmentLevel(Enchantment.LOOTING);
-        double chance = 30 + (11.667 * lootingLevel);
+        double baseChance = ConfigManager.getDouble("guardian.heart-of-the-sea-base-chance-percent", 30);
+        double perLooting = ConfigManager.getDouble("guardian.heart-of-the-sea-per-looting-level-percent", 11.667);
+        double chance = baseChance + (perLooting * lootingLevel);
 
         event.getDrops().add(new ItemStack(Material.HEART_OF_THE_SEA, 1));
         if (ThreadLocalRandom.current().nextDouble() * 100 <= chance) {
@@ -33,7 +40,7 @@ public class GuardianListener implements Listener {
         if (luck == null || luck.getAmplifier() < 1) return;
 
         player.addPotionEffect(new PotionEffect(
-                PotionEffectType.LUCK, luck.getDuration() + 20 * 60 * 4, 2));
+                PotionEffectType.LUCK, luck.getDuration() + luckDurationTicks(), 2));
     }
 
     @EventHandler
@@ -46,6 +53,6 @@ public class GuardianListener implements Listener {
         if (luck == null || luck.getAmplifier() > 1) return;
 
         player.addPotionEffect(new PotionEffect(
-                PotionEffectType.LUCK, luck.getDuration() + 20 * 60 * 4, 1));
+                PotionEffectType.LUCK, luck.getDuration() + luckDurationTicks(), 1));
     }
 }

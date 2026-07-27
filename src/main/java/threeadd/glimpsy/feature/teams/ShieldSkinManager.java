@@ -14,6 +14,7 @@ import org.bukkit.persistence.PersistentDataType;
 import org.jetbrains.annotations.Nullable;
 import threeadd.glimpsy.Glimpsy;
 import threeadd.glimpsy.util.ScheduleUtil;
+import threeadd.glimpsy.util.config.ConfigManager;
 import threeadd.glimpsy.util.manager.ListeningManager;
 
 import java.util.List;
@@ -31,7 +32,8 @@ public class ShieldSkinManager extends ListeningManager {
 
     @Override
     public void onEnable() {
-        ScheduleUtil.scheduleSync(this::tick, 1, 1, ScheduleUtil.Unit.SECOND);
+        int intervalSeconds = ConfigManager.getInt("shield-skin.reapply-interval-seconds", 1);
+        ScheduleUtil.scheduleSync(this::tick, intervalSeconds, intervalSeconds, ScheduleUtil.Unit.SECOND);
     }
 
     @EventHandler

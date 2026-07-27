@@ -11,6 +11,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
+import threeadd.glimpsy.util.config.ConfigManager;
 
 public class LightningRodListener implements Listener {
 
@@ -30,7 +31,7 @@ public class LightningRodListener implements Listener {
         if (player.getCooldown(Material.COPPER_INGOT) > 0) return;
 
         heldItem.subtract(1);
-        player.setCooldown(Material.COPPER_INGOT, 100);
+        player.setCooldown(Material.COPPER_INGOT, ConfigManager.getInt("lightning-rod.cooldown-ticks", 100));
 
         block.getWorld().spawnEntity(location, EntityType.LIGHTNING_BOLT, CreatureSpawnEvent.SpawnReason.CUSTOM);
 

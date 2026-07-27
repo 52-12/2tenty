@@ -25,4 +25,9 @@ public class GoldBootsRecipe extends CustomRecipe {
     public Component createUsage() {
         return ComponentParser.parseRichString("Added for gold gathering");
     }
+
+    @Override
+    public boolean isListed() {
+        return false; // shown as part of GoldHelmetRecipe's /recipes entry instead
+    }
 }

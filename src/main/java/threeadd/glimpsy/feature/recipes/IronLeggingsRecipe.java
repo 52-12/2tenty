@@ -25,4 +25,9 @@ public class IronLeggingsRecipe extends CustomRecipe {
                 50,
                 300);
     }
+
+    @Override
+    public boolean isListed() {
+        return false; // shown as part of IronHelmetRecipe's /recipes entry instead
+    }
 }

@@ -25,4 +25,9 @@ public class GoldLeggingsBlastingRecipe extends CustomRecipe {
                 50,
                 150);
     }
+
+    @Override
+    public boolean isListed() {
+        return false; // shown as part of GoldHelmetRecipe's /recipes entry instead
+    }
 }

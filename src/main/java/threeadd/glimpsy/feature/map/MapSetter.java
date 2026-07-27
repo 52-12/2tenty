@@ -16,10 +16,12 @@ import net.kyori.adventure.sound.SoundStop;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import threeadd.glimpsy.Glimpsy;
+import threeadd.glimpsy.feature.spawn.WorldSpawnManager;
 import threeadd.glimpsy.util.ScheduleUtil;
 import threeadd.glimpsy.util.text.ComponentParser;
 
@@ -139,6 +141,8 @@ public class MapSetter {
     }
 
     private static void finishReset(org.bukkit.World bukkitWorld) {
+        MapResetManager.recordReset(); // so offline players get redirected to spawn on rejoin, not their old (now-void) position
+
         Component alertSymbol = Component.text('⚠')
                 .color(TextColor.color(0xD93B3B));
 
@@ -154,9 +158,11 @@ public class MapSetter {
                         .appendNewline()
         );
 
+        Location spawnLocation = WorldSpawnManager.getCustomSpawn().orElse(bukkitWorld.getSpawnLocation());
+
         ScheduleUtil.scheduleSync(() -> {
             for (Player player : Bukkit.getOnlinePlayers()) {
-                player.teleportAsync(bukkitWorld.getSpawnLocation()).thenAccept(success -> {
+                player.teleportAsync(spawnLocation).thenAccept(success -> {
                     if (!success) throw new IllegalStateException("Teleport failed");
 
                     player.setFoodLevel(10);

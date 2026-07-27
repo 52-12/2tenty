@@ -2,3 +2,9 @@
 /.gradle/
 /build/
 /build/classes/java/main/
+# Contains the RCON password - keep it out of the repo
+/deploy.ps1
+/deploy.bat
+
+# Local Claude Code tooling config
+/.claude/

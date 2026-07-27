@@ -10,6 +10,7 @@ import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import threeadd.glimpsy.util.command.CustomCommand;
+import threeadd.glimpsy.util.config.ConfigManager;
 import threeadd.glimpsy.util.text.ComponentParser;
 
 public class HatCommand extends CustomCommand {
@@ -36,8 +37,9 @@ public class HatCommand extends CustomCommand {
         ItemStack newHelmet = heldItem.clone();
         ItemStack newHeldItem = helmet.clone();
 
-        player.setCooldown(heldItem.getType(), 20);
-        player.setCooldown(helmet.getType(), 20);
+        int cooldownTicks = ConfigManager.getInt("hat.cooldown-ticks", 20);
+        player.setCooldown(heldItem.getType(), cooldownTicks);
+        player.setCooldown(helmet.getType(), cooldownTicks);
 
         player.getInventory().setHelmet(newHelmet);
         player.getInventory().setItemInMainHand(newHeldItem);

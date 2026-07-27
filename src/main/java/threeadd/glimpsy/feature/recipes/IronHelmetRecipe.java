@@ -14,7 +14,13 @@ public class IronHelmetRecipe extends CustomRecipe {
 
     @Override
     public Component createUsage() {
-        return ComponentParser.parseRichString("Added for iron gathering");
+        return ComponentParser.parseRichString(
+                "Smelt iron armor into iron nuggets:\n" +
+                        "helmet: 3\n" +
+                        "chestplate: 7\n" +
+                        "leggings: 5\n" +
+                        "boots: 2\n" +
+                        "Blast furnaces work too and are twice as fast.");
     }
 
     @Override

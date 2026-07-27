@@ -22,6 +22,8 @@ import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.player.PlayerFishEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ArmorMeta;
+import org.bukkit.inventory.meta.Damageable;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.trim.ArmorTrim;
 import org.bukkit.inventory.meta.trim.TrimMaterial;
 import org.bukkit.inventory.meta.trim.TrimPattern;
@@ -29,6 +31,7 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import threeadd.glimpsy.Glimpsy;
+import threeadd.glimpsy.util.config.ConfigManager;
 import threeadd.glimpsy.util.text.ComponentParser;
 
 import java.util.ArrayList;
@@ -41,16 +44,62 @@ import java.util.concurrent.ThreadLocalRandom;
 @SuppressWarnings("UnstableApiUsage")
 public class GuardianFishingListener implements Listener {
 
-    private static final double FISH_GUARDIAN_CHANCE = 0.05; // 5% per successful catch - common
-    private static final double ELDER_GUARDIAN_CHANCE = 0.15; // 15% of those catches are an Elder Guardian instead - rarer
-    private static final double TRIMMED_ARMOR_DROP_CHANCE = 0.3; // 30% chance on kill
+    private static double fishGuardianChance() {
+        return ConfigManager.getDouble("guardian-fishing.fish-guardian-chance", 0.05); // per successful catch - common
+    }
+
+    private static double elderGuardianChance() {
+        return ConfigManager.getDouble("guardian-fishing.elder-guardian-chance", 0.15); // of those catches, rarer
+    }
+
+    private static double trimTemplateDropChance() {
+        return ConfigManager.getDouble("guardian-fishing.trim-template-drop-chance", 0.3); // on kill
+    }
+
+    private static double trimmedArmorPieceDropChance() {
+        return ConfigManager.getDouble("guardian-fishing.trimmed-armor-piece-drop-chance", 0.02); // on kill, mutually exclusive with the template drop
+    }
+
+    private static int elderLuckDurationTicks() {
+        return ConfigManager.getInt("guardian-fishing.elder-luck-duration-seconds", 300) * 20; // 5 minutes
+    }
+
+    private static int regularLuckDurationTicks() {
+        return ConfigManager.getInt("guardian-fishing.regular-luck-duration-seconds", 120) * 20; // 2 minutes
+    }
+
+    private static double damagedArmorMaxDurabilityFraction() {
+        return ConfigManager.getDouble("guardian-fishing.damaged-armor-max-durability-fraction", 0.5);
+    }
 
     private static final NamespacedKey FISHED_GUARDIAN_KEY = new NamespacedKey(Glimpsy.getInstance(), "fished_guardian");
     private static final NamespacedKey FISHER_KEY = new NamespacedKey(Glimpsy.getInstance(), "fished_guardian_owner");
 
-    private static final Material[] ARMOR_PIECES = {
+    private static final Material[] LEATHER_OR_IRON_ARMOR_PIECES = {
             Material.LEATHER_HELMET, Material.LEATHER_CHESTPLATE, Material.LEATHER_LEGGINGS, Material.LEATHER_BOOTS,
             Material.IRON_HELMET, Material.IRON_CHESTPLATE, Material.IRON_LEGGINGS, Material.IRON_BOOTS
+    };
+
+    // All 18 armor trim smithing templates - Elder Guardian exclusive drop.
+    private static final Material[] TRIM_SMITHING_TEMPLATES = {
+            Material.BOLT_ARMOR_TRIM_SMITHING_TEMPLATE,
+            Material.COAST_ARMOR_TRIM_SMITHING_TEMPLATE,
+            Material.DUNE_ARMOR_TRIM_SMITHING_TEMPLATE,
+            Material.EYE_ARMOR_TRIM_SMITHING_TEMPLATE,
+            Material.FLOW_ARMOR_TRIM_SMITHING_TEMPLATE,
+            Material.HOST_ARMOR_TRIM_SMITHING_TEMPLATE,
+            Material.RAISER_ARMOR_TRIM_SMITHING_TEMPLATE,
+            Material.RIB_ARMOR_TRIM_SMITHING_TEMPLATE,
+            Material.SENTRY_ARMOR_TRIM_SMITHING_TEMPLATE,
+            Material.SHAPER_ARMOR_TRIM_SMITHING_TEMPLATE,
+            Material.SILENCE_ARMOR_TRIM_SMITHING_TEMPLATE,
+            Material.SNOUT_ARMOR_TRIM_SMITHING_TEMPLATE,
+            Material.SPIRE_ARMOR_TRIM_SMITHING_TEMPLATE,
+            Material.TIDE_ARMOR_TRIM_SMITHING_TEMPLATE,
+            Material.VEX_ARMOR_TRIM_SMITHING_TEMPLATE,
+            Material.WARD_ARMOR_TRIM_SMITHING_TEMPLATE,
+            Material.WAYFINDER_ARMOR_TRIM_SMITHING_TEMPLATE,
+            Material.WILD_ARMOR_TRIM_SMITHING_TEMPLATE
     };
 
     // Mirrors ChargedCreeperFishingListener's anti-spam gate - one fished guardian per player at a time.
@@ -63,12 +112,12 @@ public class GuardianFishingListener implements Listener {
         Player player = event.getPlayer();
         if (playersWithActiveGuardian.contains(player.getUniqueId())) return;
 
-        if (ThreadLocalRandom.current().nextDouble() >= FISH_GUARDIAN_CHANCE) return;
+        if (ThreadLocalRandom.current().nextDouble() >= fishGuardianChance()) return;
 
         event.setCancelled(true);
 
         Location location = event.getHook().getLocation();
-        boolean elder = ThreadLocalRandom.current().nextDouble() < ELDER_GUARDIAN_CHANCE;
+        boolean elder = ThreadLocalRandom.current().nextDouble() < elderGuardianChance();
 
         LivingEntity guardian = (LivingEntity) location.getWorld().spawnEntity(
                 location, elder ? EntityType.ELDER_GUARDIAN : EntityType.GUARDIAN, CreatureSpawnEvent.SpawnReason.CUSTOM);
@@ -97,24 +146,47 @@ public class GuardianFishingListener implements Listener {
         if (fisherId != null)
             playersWithActiveGuardian.remove(UUID.fromString(fisherId));
 
-        if (ThreadLocalRandom.current().nextDouble() < TRIMMED_ARMOR_DROP_CHANCE)
-            event.getDrops().add(createTrimmedArmor());
+        if (elder) {
+            // Mutually exclusive - a kill either yields the rare full trimmed piece, or (much
+            // more often) just a template, never both.
+            if (ThreadLocalRandom.current().nextDouble() < trimmedArmorPieceDropChance())
+                event.getDrops().add(createDamagedTrimmedArmor());
+            else if (ThreadLocalRandom.current().nextDouble() < trimTemplateDropChance())
+                event.getDrops().add(createRandomTrimTemplate());
+        }
 
         if (!(event.getEntity().getKiller() instanceof Player player)) return;
 
-        int durationTicks = elder ? 20 * 60 * 5 : 20 * 60 * 2; // Elder: 5 minutes, regular: 2 minutes
+        int durationTicks = elder ? elderLuckDurationTicks() : regularLuckDurationTicks();
         player.addPotionEffect(new PotionEffect(PotionEffectType.LUCK, durationTicks, elder ? 1 : 0));
     }
 
-    private ItemStack createTrimmedArmor() {
-        Material piece = ARMOR_PIECES[ThreadLocalRandom.current().nextInt(ARMOR_PIECES.length)];
+    private ItemStack createRandomTrimTemplate() {
+        Material template = TRIM_SMITHING_TEMPLATES[ThreadLocalRandom.current().nextInt(TRIM_SMITHING_TEMPLATES.length)];
+        return new ItemStack(template);
+    }
+
+    // Base piece is leather or iron, but the trim material applied to it can be anything -
+    // trims aren't restricted to matching the base armor material. Comes pre-worn, below 50%
+    // durability remaining, like it's been sitting in a guardian's lair for a while.
+    private ItemStack createDamagedTrimmedArmor() {
+        Material piece = LEATHER_OR_IRON_ARMOR_PIECES[ThreadLocalRandom.current().nextInt(LEATHER_OR_IRON_ARMOR_PIECES.length)];
 
         ItemStack armor = new ItemStack(piece);
-        ArmorMeta meta = (ArmorMeta) armor.getItemMeta();
+        ItemMeta meta = armor.getItemMeta();
 
-        TrimPattern pattern = randomEntry(RegistryKey.TRIM_PATTERN);
-        TrimMaterial material = randomEntry(RegistryKey.TRIM_MATERIAL);
-        meta.setTrim(new ArmorTrim(material, pattern));
+        if (meta instanceof ArmorMeta armorMeta) {
+            TrimPattern pattern = randomEntry(RegistryKey.TRIM_PATTERN);
+            TrimMaterial material = randomEntry(RegistryKey.TRIM_MATERIAL);
+            armorMeta.setTrim(new ArmorTrim(material, pattern));
+        }
+
+        if (meta instanceof Damageable damageable) {
+            int maxDurability = piece.getMaxDurability();
+            int minDamage = (int) (maxDurability * damagedArmorMaxDurabilityFraction()) + 1; // strictly below that fraction of durability remaining
+            int damage = minDamage + ThreadLocalRandom.current().nextInt(maxDurability - minDamage + 1);
+            damageable.setDamage(damage);
+        }
 
         armor.setItemMeta(meta);
         return armor;
