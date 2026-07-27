@@ -4,6 +4,8 @@ cool thingy i skidded from 3add and Awokens
 uhh its vibe coded asf
 i dunno how to code
 
+brdige eggs from https://github.com/TheVihara/BridgeEggs
+
 ## compile da plugin
 
 open uhh command prompt do this
