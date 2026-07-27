@@ -94,6 +94,9 @@ mending:
   # goes to the player as normal instead). The enchantment can still appear on items, it just
   # does nothing.
   enabled: true
+  # true blocks Mending being applied to diamond tools via the anvil (the only way onto a tool,
+  # since Mending is a treasure enchant). Existing Mending on a diamond tool is left alone.
+  block-on-diamond-tools: true
 
 teams:
   name-max-length: 12
@@ -116,6 +119,36 @@ guardian-fishing:
   elder-luck-duration-seconds: 300
   regular-luck-duration-seconds: 120
   damaged-armor-max-durability-fraction: 0.5
+  # Elder Guardian drop pools (customisable). trim-templates: the smithing templates it can drop.
+  # armor-pieces: the base armour a rare pre-trimmed piece is made from.
+  trim-templates:
+    - bolt_armor_trim_smithing_template
+    - coast_armor_trim_smithing_template
+    - dune_armor_trim_smithing_template
+    - eye_armor_trim_smithing_template
+    - flow_armor_trim_smithing_template
+    - host_armor_trim_smithing_template
+    - raiser_armor_trim_smithing_template
+    - rib_armor_trim_smithing_template
+    - sentry_armor_trim_smithing_template
+    - shaper_armor_trim_smithing_template
+    - silence_armor_trim_smithing_template
+    - snout_armor_trim_smithing_template
+    - spire_armor_trim_smithing_template
+    - tide_armor_trim_smithing_template
+    - vex_armor_trim_smithing_template
+    - ward_armor_trim_smithing_template
+    - wayfinder_armor_trim_smithing_template
+    - wild_armor_trim_smithing_template
+  armor-pieces:
+    - leather_helmet
+    - leather_chestplate
+    - leather_leggings
+    - leather_boots
+    - iron_helmet
+    - iron_chestplate
+    - iron_leggings
+    - iron_boots
 
 charged-creeper-fishing:
   catch-chance: 0.015
@@ -123,6 +156,18 @@ charged-creeper-fishing:
 
 player-fishing:
   catch-chance: 0.001
+
+villager:
+  # Professions a villager can never take (so they never offer those trades). Use vanilla
+  # profession names. Empty falls back to the default (armorer, librarian, weaponsmith).
+  blocked-professions:
+    - armorer
+    - librarian
+    - weaponsmith
+  # true strips enchantments off diamond tools sold by toolsmiths
+  strip-diamond-tool-enchants: true
+  # true stops villagers from breeding
+  disable-breeding: true
 
 creeper-spawn:
   cancel-chance: 0.5
@@ -132,6 +177,46 @@ suspicious-sand:
   # Rolled first - a rare chance to get Flint or Quartz instead of the usual common/rare loot
   rare-loot-chance-percent: 3.0
   common-loot-chance-percent: 50
+  # Loot pools - two formats. Either a plain list (a material listed twice is twice as likely):
+  #     common-loot:
+  #       - bow
+  #       - diamond
+  # or a map of material: weight for exact per-item chances (weight 5 is 5x as likely as 1):
+  #     common-loot:
+  #       bow: 1
+  #       diamond: 5
+  # Leave a pool empty to fall back to the built-in default.
+  rare-loot:
+    - flint
+    - quartz
+  common-loot:
+    - bow
+    - nautilus_shell
+    - nautilus_shell
+    - fishing_rod
+    - bundle
+    - carrot
+    - potato
+    - beetroot_seeds
+    - wheat_seeds
+    - dead_bush
+    - dead_bush
+    - gold_ingot
+    - coal
+    - coast_armor_trim_smithing_template
+    - dune_armor_trim_smithing_template
+    - eye_armor_trim_smithing_template
+    - wild_armor_trim_smithing_template
+    - raiser_armor_trim_smithing_template
+    - rib_armor_trim_smithing_template
+    - host_armor_trim_smithing_template
+    - sentry_armor_trim_smithing_template
+    - shaper_armor_trim_smithing_template
+    - snout_armor_trim_smithing_template
+    - tide_armor_trim_smithing_template
+    - vex_armor_trim_smithing_template
+    - ward_armor_trim_smithing_template
+    - wayfinder_armor_trim_smithing_template
 
 suspicious-gravel:
   common-loot-chance-percent: 98

@@ -183,7 +183,7 @@ public class TeamManager extends ListeningManager {
         playerTeamId.put(owner.getUniqueId(), team.getId());
 
         TeamRepository.getInstance().runAsyncSave(team);
-        return Result.ok(Messages.get("teams.team-set", "Your team is now: {name}", "name", rawName));
+        return Result.ok(Messages.get("teams.team-set", "<white>Your team is now: {name}", "name", rawName));
     }
 
     // While your team is in an alliance, renaming isn't meaningful for the team itself (its own
@@ -203,7 +203,7 @@ public class TeamManager extends ListeningManager {
 
         team.setRawName(rawName);
         TeamRepository.getInstance().runAsyncSave(team);
-        return Result.ok(Messages.get("teams.team-set", "Your team is now: {name}", "name", rawName));
+        return Result.ok(Messages.get("teams.team-set", "<white>Your team is now: {name}", "name", rawName));
     }
 
     /**

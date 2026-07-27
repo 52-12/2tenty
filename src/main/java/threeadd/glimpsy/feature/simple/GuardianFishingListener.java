@@ -75,13 +75,23 @@ public class GuardianFishingListener implements Listener {
     private static final NamespacedKey FISHED_GUARDIAN_KEY = new NamespacedKey(Glimpsy.getInstance(), "fished_guardian");
     private static final NamespacedKey FISHER_KEY = new NamespacedKey(Glimpsy.getInstance(), "fished_guardian_owner");
 
-    private static final Material[] LEATHER_OR_IRON_ARMOR_PIECES = {
+    // Defaults; the live pools are read from config (see armorPieces() / trimTemplates()) so
+    // they can be customised in config.yml.
+    private static final Material[] LEATHER_OR_IRON_ARMOR_PIECES_DEFAULT = {
             Material.LEATHER_HELMET, Material.LEATHER_CHESTPLATE, Material.LEATHER_LEGGINGS, Material.LEATHER_BOOTS,
             Material.IRON_HELMET, Material.IRON_CHESTPLATE, Material.IRON_LEGGINGS, Material.IRON_BOOTS
     };
 
+    private static Material[] armorPieces() {
+        return ConfigManager.getMaterialList("guardian-fishing.armor-pieces", LEATHER_OR_IRON_ARMOR_PIECES_DEFAULT);
+    }
+
+    private static Material[] trimTemplates() {
+        return ConfigManager.getMaterialList("guardian-fishing.trim-templates", TRIM_SMITHING_TEMPLATES_DEFAULT);
+    }
+
     // All 18 armor trim smithing templates - Elder Guardian exclusive drop.
-    private static final Material[] TRIM_SMITHING_TEMPLATES = {
+    private static final Material[] TRIM_SMITHING_TEMPLATES_DEFAULT = {
             Material.BOLT_ARMOR_TRIM_SMITHING_TEMPLATE,
             Material.COAST_ARMOR_TRIM_SMITHING_TEMPLATE,
             Material.DUNE_ARMOR_TRIM_SMITHING_TEMPLATE,
@@ -162,7 +172,8 @@ public class GuardianFishingListener implements Listener {
     }
 
     private ItemStack createRandomTrimTemplate() {
-        Material template = TRIM_SMITHING_TEMPLATES[ThreadLocalRandom.current().nextInt(TRIM_SMITHING_TEMPLATES.length)];
+        Material[] templates = trimTemplates();
+        Material template = templates[ThreadLocalRandom.current().nextInt(templates.length)];
         return new ItemStack(template);
     }
 
@@ -170,7 +181,8 @@ public class GuardianFishingListener implements Listener {
     // trims aren't restricted to matching the base armor material. Comes pre-worn, below 50%
     // durability remaining, like it's been sitting in a guardian's lair for a while.
     private ItemStack createDamagedTrimmedArmor() {
-        Material piece = LEATHER_OR_IRON_ARMOR_PIECES[ThreadLocalRandom.current().nextInt(LEATHER_OR_IRON_ARMOR_PIECES.length)];
+        Material[] pieces = armorPieces();
+        Material piece = pieces[ThreadLocalRandom.current().nextInt(pieces.length)];
 
         ItemStack armor = new ItemStack(piece);
         ItemMeta meta = armor.getItemMeta();

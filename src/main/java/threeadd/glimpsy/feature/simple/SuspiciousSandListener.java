@@ -20,12 +20,22 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class SuspiciousSandListener implements Listener {
 
-    private static final Material[] RARE_LOOT = {
+    // These are the built-in defaults; the actual pools are read from config (see rareLoot() /
+    // commonLoot()) so they can be customised in config.yml. Duplicates raise a material's odds.
+    private static final Material[] RARE_LOOT_DEFAULT = {
             Material.FLINT,
             Material.QUARTZ
     };
 
-    private static final Material[] COMMON_LOOT = {
+    private static Material[] rareLoot() {
+        return ConfigManager.getMaterialList("suspicious-sand.rare-loot", RARE_LOOT_DEFAULT);
+    }
+
+    private static Material[] commonLoot() {
+        return ConfigManager.getMaterialList("suspicious-sand.common-loot", COMMON_LOOT_DEFAULT);
+    }
+
+    private static final Material[] COMMON_LOOT_DEFAULT = {
             Material.BOW,
             Material.NAUTILUS_SHELL,
             Material.NAUTILUS_SHELL,
@@ -69,9 +79,11 @@ public class SuspiciousSandListener implements Listener {
         int commonLootChancePercent = ConfigManager.getInt("suspicious-sand.common-loot-chance-percent", 50);
 
         if (random.nextDouble(100) < rareLootChancePercent) {
-            result = new ItemStack(RARE_LOOT[random.nextInt(RARE_LOOT.length)]);
+            Material[] rare = rareLoot();
+            result = new ItemStack(rare[random.nextInt(rare.length)]);
         } else if (random.nextInt(100) <= commonLootChancePercent) {
-            result = new ItemStack(COMMON_LOOT[random.nextInt(COMMON_LOOT.length)]);
+            Material[] common = commonLoot();
+            result = new ItemStack(common[random.nextInt(common.length)]);
         } else {
             LootTable lootTable = Bukkit.getLootTable(LootTables.DESERT_PYRAMID.getKey());
             if (lootTable == null) return;

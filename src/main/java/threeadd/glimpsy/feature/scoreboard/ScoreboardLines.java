@@ -76,7 +76,7 @@ final class ScoreboardLines {
         lines.add(Messages.msg("scoreboard.line-tps", "<muted>TPS <white>{tps}", "tps", tps));
         lines.add(Messages.msg("scoreboard.line-players", "<muted>Players <white>{players}", "players", players));
         lines.add(Component.empty());
-        lines.add(Messages.msg("scoreboard.line-ip", "<primary>{ip}", "ip", ip));
+        lines.add(Messages.msg("scoreboard.line-ip", "<#2881C6>{ip}", "ip", ip));
         return lines;
     }
 

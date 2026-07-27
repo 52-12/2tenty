@@ -56,17 +56,9 @@ public class TabManager extends ListeningManager {
     }
 
     private static Component createFooter(double tps, int playerCount) {
-        String formattedTps = formatTps(tps);
-        String players = String.valueOf(playerCount);
-
-        TextColor labelColor = TextColor.color(0xBCBCBC);
-        TextColor valueColor = TextColor.color(0x79ADD6);
-
-        Component statusLine = Component.empty()
-                .append(Component.text("TPS ").color(labelColor))
-                .append(Component.text(formattedTps).color(valueColor))
-                .append(Component.text("   Players ").color(labelColor))
-                .append(Component.text(players).color(valueColor));
+        Component statusLine = Messages.msg("tab.footer-status",
+                "<#BCBCBC>TPS <#79ADD6>{tps}   <#BCBCBC>Players <#79ADD6>{players}",
+                "tps", formatTps(tps), "players", String.valueOf(playerCount));
 
         Component url = Messages.msg("tab.footer-url", "<#9F9F9F>2tenty.MineHut.gg");
 
