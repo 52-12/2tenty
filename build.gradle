@@ -8,6 +8,12 @@ plugins {
 group = 'threeadd'
 version = '1.0'
 
+// Minecraft/Paper target version - change these in gradle.properties to build for a newer
+// Minecraft version (see the README section "Updating to a newer Minecraft version"). The
+// fallbacks keep the build working even if the properties are ever removed.
+def mcVersion = (project.findProperty('minecraftVersion') ?: '1.21.11').toString()
+def paperApiVersion = (project.findProperty('paperApiVersion') ?: '1.21').toString()
+
 repositories {
     mavenCentral()
 
@@ -19,11 +25,6 @@ repositories {
     maven { // fastasyncworldedit, bukkit adapter
         name = "engine-hub-repo"
         url = "https://maven.enginehub.org/repo/"
-    }
-
-    maven { // votifier
-        name = "jitpack"
-        url = "https://jitpack.io"
     }
 
     maven { // packetevents
@@ -44,7 +45,7 @@ configurations.all {
 }
 
 dependencies {
-    paperweight.paperDevBundle("1.21.11-R0.1-SNAPSHOT")
+    paperweight.paperDevBundle("${mcVersion}-R0.1-SNAPSHOT")
     implementation("com.zaxxer:HikariCP:7.0.2")
     implementation("org.xerial:sqlite-jdbc:3.47.2.0")
 
@@ -52,7 +53,6 @@ dependencies {
     compileOnly("com.fastasyncworldedit:FastAsyncWorldEdit-Core")
     compileOnly("com.fastasyncworldedit:FastAsyncWorldEdit-Bukkit")
     compileOnly("com.sk89q.worldguard:worldguard-bukkit:7.0.17")
-    compileOnly("com.github.NuVotifier:NuVotifier:2.7.2")
     compileOnly("com.discordsrv:discordsrv:1.28.0")
     implementation("com.github.retrooper:packetevents-spigot:2.13.0")
 }
@@ -91,7 +91,7 @@ shadowJar {
 
 tasks {
     runServer {
-        minecraftVersion("1.21.11")
+        minecraftVersion(mcVersion)
     }
 }
 
@@ -114,10 +114,13 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 processResources {
-    def props = [version: version]
+    // Fills the ${version} and ${apiVersion} placeholders in paper-plugin.yml at build time,
+    // so the plugin version and Minecraft API level live in one place (here / gradle.properties)
+    // rather than being hard-coded in the yml.
+    def props = [version: version, apiVersion: paperApiVersion]
     inputs.properties props
     filteringCharset = 'UTF-8'
-    filesMatching('plugin.yml') {
+    filesMatching('paper-plugin.yml') {
         expand props
     }
 }
