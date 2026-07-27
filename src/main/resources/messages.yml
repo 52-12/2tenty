@@ -26,9 +26,18 @@ misc:
   no-matching-player: "<error>No matching player found"
   player-only: "<error>You need to be a player for this command"
 
+chat:
+  # Typed in chat, these tokens are replaced with the sender's own live stat, e.g. [kills] -> "Kills: 12"
+  placeholder-kills: "<#FFE08F>Kills: {value}"
+  placeholder-deaths: "<#FFE08F>Deaths: {value}"
+  placeholder-fishes: "<#FFE08F>Fishes: {value}"
+  placeholder-playtime: "<#FFE08F>Playtime: {value}"
+
 tab:
   header-title: "<b><title>2TENTY</b>"
   header-subtitle: "<#C4C4C4>by 3upman"
+  # The TPS / player-count line at the bottom of the tab list ({tps} and {players} are filled in)
+  footer-status: "<#BCBCBC>TPS <#79ADD6>{tps}   <#BCBCBC>Players <#79ADD6>{players}"
   footer-url: "<#9F9F9F>2tenty.MineHut.gg"
 
 help:
@@ -44,7 +53,8 @@ teams:
   already-on-team: "You're already on a team - leave it first with /teams leave"
   owner-only: "Only the team owner can do that"
   owner-or-trusted-only: "Only the team owner or trusted members can do that"
-  team-set: "Your team is now: {name}"
+  # <white> label overrides the success-green so the {name} shows in the team's own colour
+  team-set: "<white>Your team is now: {name}"
   disbanded: "You disbanded your team"
   left: "You left your team"
   members-header: "Team members: "
@@ -180,7 +190,8 @@ scoreboard:
   line-reset: "<muted>Map reset <white>{reset}"
   line-tps: "<muted>TPS <white>{tps}"
   line-players: "<muted>Players <white>{players}"
-  line-ip: "<primary>{ip}"
+  # The IP line on the scoreboard - change the colour tag (e.g. <#2881C6>, <primary>, <green>)
+  line-ip: "<#2881C6>{ip}"
   reset-paused: "Paused"
   reset-off: "Off"
   shown: "<success>Scoreboard shown"
