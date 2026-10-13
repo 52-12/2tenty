@@ -6,8 +6,11 @@ import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerFishEvent;
+import threeadd.glimpsy.feature.achievement.Achievement;
+import threeadd.glimpsy.feature.achievement.AchievementManager;
 import threeadd.glimpsy.util.config.ConfigManager;
 import threeadd.glimpsy.util.text.ComponentParser;
 
@@ -37,7 +40,9 @@ public class PlayerFishingListener implements Listener {
             immunePlayers.remove(player.getUniqueId());
     }
 
-    @EventHandler
+    // NORMAL: runs after the guardian roll (LOW) but before the creeper roll (HIGH). ignoreCancelled
+    // means it's skipped entirely once an earlier special catch has already cancelled the event.
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     public void onFish(PlayerFishEvent event) {
         if (event.getState() != PlayerFishEvent.State.CAUGHT_FISH) return;
         if (ThreadLocalRandom.current().nextDouble() >= fishPlayerChance()) return;
@@ -58,6 +63,8 @@ public class PlayerFishingListener implements Listener {
 
         hookLocation.getWorld().playSound(hookLocation, Sound.ENTITY_GENERIC_SPLASH, 1.0F, 1.0F);
         hookLocation.getWorld().spawnParticle(Particle.SPLASH, hookLocation, 30, 0.3, 0.3, 0.3);
+
+        AchievementManager.award(fisher, Achievement.OH_HELLO_THERE);
 
         fisher.sendMessage(ComponentParser.parseRichString("You reeled in <yellow>" + caught.getName() + "</yellow>!"));
         caught.sendMessage(ComponentParser.parseRichString("<yellow>" + fisher.getName() + "</yellow> caught you with their fishing rod!"));
