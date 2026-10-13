@@ -62,18 +62,15 @@ public class FishingSoundFilter extends PacketListenerAbstract {
                 return;
             }
 
-            // Any reel is inaudible while muted, whoever/wherever it is.
+            // The pull/reel is only wanted when YOU are the one a rod is hauling in.
             if (key.equals(RETRIEVE_KEY)) {
-                event.setCancelled(true);
+                if (!FishingSounds.wasRecentlyHooked(uuid)) event.setCancelled(true);
                 return;
             }
 
             boolean bobberSound = key.startsWith(FISHING_BOBBER_PREFIX);
             boolean splashSound = key.startsWith(ENTITY_PREFIX) && key.endsWith(SPLASH_SUFFIX);
             if (!bobberSound && !splashSound) return;
-
-            // You're the one a rod is hauling in - keep the rest of that (splash/swim), not the reel.
-            if (FishingSounds.wasRecentlyHooked(uuid)) return;
 
             // The cast sound is played at the caster, so match it at the player.
             if (key.equals(THROW_KEY) && isNear(player.getLocation(), position)) return;
@@ -93,7 +90,7 @@ public class FishingSoundFilter extends PacketListenerAbstract {
         String key = wrapper.getSound().getSoundId().toString();
 
         if (key.equals(RETRIEVE_KEY)) {
-            event.setCancelled(true);
+            if (!FishingSounds.wasRecentlyHooked(uuid)) event.setCancelled(true);
             return;
         }
 
