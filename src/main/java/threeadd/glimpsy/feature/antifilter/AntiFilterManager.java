@@ -17,6 +17,7 @@ import threeadd.glimpsy.util.config.ConfigManager;
 import threeadd.glimpsy.util.manager.ListeningManager;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
@@ -62,8 +63,15 @@ public class AntiFilterManager extends ListeningManager {
     }
 
     public static void open(Player player, AntiFilterType type) {
+        FilterSet set = getSet(player.getUniqueId(), type);
+
+        // Bring the stored samples up to date with the player's current items (new enchants, a
+        // rename, ...) before drawing the menu, so the display follows the real item.
+        if (set.syncFromInventory(player))
+            AntiFilterRepository.getInstance().runAsyncSave(player.getUniqueId(), type, set.samples);
+
         AntiFilterInventory gui = new AntiFilterInventory(player.getUniqueId(), type);
-        gui.render(getSet(player.getUniqueId(), type).samples);
+        gui.render(set.samples);
         player.openInventory(gui.getInventory());
     }
 
@@ -215,6 +223,45 @@ public class AntiFilterManager extends ListeningManager {
                 allMaterials.add(sample.getType());
                 normalizedSamples.add(normalizeForDrop(sample));
             }
+        }
+
+        // Pulls each stored sample up to date from a matching item the player currently has, so
+        // enchanting/renaming the protected item shows through in the menu and the stored sample
+        // follows the real item. Same identity comparison as matchesSpecific, with an exact match
+        // preferred so the richest copy wins.
+        boolean syncFromInventory(Player player) {
+            List<ItemStack> contents = new ArrayList<>(Arrays.asList(player.getInventory().getContents()));
+            contents.add(player.getInventory().getItemInOffHand());
+
+            boolean changed = false;
+
+            for (int i = 0; i < samples.size(); i++) {
+                ItemStack sample = samples.get(i);
+                ItemStack identityMatch = null;
+                boolean exact = false;
+
+                for (ItemStack candidate : contents) {
+                    if (candidate == null || candidate.getType() != sample.getType()) continue;
+                    if (!normalizeForDrop(candidate).isSimilar(normalizeForDrop(sample))) continue;
+
+                    if (candidate.isSimilar(sample)) {
+                        exact = true;
+                        break;
+                    }
+
+                    if (identityMatch == null) identityMatch = candidate;
+                }
+
+                if (exact || identityMatch == null) continue;
+
+                ItemStack updated = identityMatch.clone();
+                updated.setAmount(1);
+                samples.set(i, updated);
+                changed = true;
+            }
+
+            if (changed) recompute();
+            return changed;
         }
 
         // The "identity" of an item for anti-drop purposes: everything that says what the item is,
