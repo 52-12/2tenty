@@ -311,15 +311,13 @@ public class MapSetter {
         );
 
         for (Player player : Bukkit.getOnlinePlayers()) {
-            player.teleportAsync(spawnLocation).thenAccept(success -> {
-                if (!success) throw new IllegalStateException("Teleport failed");
+            player.setFoodLevel(10);
 
-                player.setFoodLevel(10);
+            player.stopSound(SoundStop.all()); // using adventure instead of Bukkit
 
-                player.stopSound(SoundStop.all()); // using adventure instead of Bukkit
-
-                player.showElderGuardian(true);
-            });
+            // Protected from the fall/void damage they'd take before the teleport lands, in case
+            // they were already falling when the reset was triggered.
+            MapResetManager.relocateToSpawn(player, spawnLocation);
         }
     }
 

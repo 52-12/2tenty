@@ -295,13 +295,22 @@ public class MapResetManager extends ListeningManager {
         boolean offlineThroughReset = lastResetMillis != 0 && lastSeen != null && lastSeen < lastResetMillis;
         if (!offlineThroughReset && !inVoid) return;
 
+        Location spawnLocation = WorldSpawnManager.getCustomSpawn().orElse(player.getWorld().getSpawnLocation());
+        relocateToSpawn(player, spawnLocation);
+    }
+
+    /**
+     * Moves a player to spawn with the elder guardian effect, protecting them from the void/fall
+     * damage they'd otherwise take from being mid-fall (or in the void) before the async teleport
+     * lands. Used both when a reset starts and when a player joins into a reset.
+     */
+    public static void relocateToSpawn(Player player, Location spawnLocation) {
         UUID id = player.getUniqueId();
+
         relocating.add(id);
         player.setFallDistance(0f);
         ScheduleUtil.scheduleSync(() -> relocating.remove(id), 100, ScheduleUtil.Unit.TICK); // safety net
 
-        // Teleport straight away rather than waiting a tick - the player is falling the whole time.
-        Location spawnLocation = WorldSpawnManager.getCustomSpawn().orElse(player.getWorld().getSpawnLocation());
         player.teleportAsync(spawnLocation).thenAccept(success -> {
             player.setFallDistance(0f);
             if (success) player.showElderGuardian(true);
