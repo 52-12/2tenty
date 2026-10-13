@@ -5,6 +5,8 @@ import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.scheduler.BukkitTask;
@@ -19,6 +21,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -38,6 +41,11 @@ public class MapResetManager extends ListeningManager {
     // online player - which they are during PlayerJoinEvent - it returns the CURRENT time, so it
     // could never tell whether they'd been offline through the reset.
     private static final Map<UUID, Long> lastSeenMillis = new ConcurrentHashMap<>();
+
+    // Players currently being moved to spawn on join. While flagged they're immune to the void/
+    // fall damage they'd otherwise take from logging in mid-fall (e.g. after logging off in the
+    // void during a reset) before the teleport lands.
+    private static final Set<UUID> relocating = ConcurrentHashMap.newKeySet();
 
     // The pending auto-reset task, so it can be cancelled on pause. Null when unscheduled.
     private static BukkitTask scheduledTask;
@@ -285,11 +293,34 @@ public class MapResetManager extends ListeningManager {
         // void login (saved position was above nothing) so nobody is left falling. Same elder
         // guardian effect as an in-person reset, but with no chat line.
         boolean offlineThroughReset = lastResetMillis != 0 && lastSeen != null && lastSeen < lastResetMillis;
-        if (offlineThroughReset || inVoid) {
-            Location spawnLocation = WorldSpawnManager.getCustomSpawn().orElse(player.getWorld().getSpawnLocation());
-            ScheduleUtil.scheduleSync(() -> player.teleportAsync(spawnLocation).thenAccept(success -> {
-                if (success) player.showElderGuardian(true);
-            }));
+        if (!offlineThroughReset && !inVoid) return;
+
+        UUID id = player.getUniqueId();
+        relocating.add(id);
+        player.setFallDistance(0f);
+        ScheduleUtil.scheduleSync(() -> relocating.remove(id), 100, ScheduleUtil.Unit.TICK); // safety net
+
+        // Teleport straight away rather than waiting a tick - the player is falling the whole time.
+        Location spawnLocation = WorldSpawnManager.getCustomSpawn().orElse(player.getWorld().getSpawnLocation());
+        player.teleportAsync(spawnLocation).thenAccept(success -> {
+            player.setFallDistance(0f);
+            if (success) player.showElderGuardian(true);
+
+            ScheduleUtil.scheduleSync(() -> relocating.remove(id), 40, ScheduleUtil.Unit.TICK);
+        });
+    }
+
+    // While a player is being relocated to spawn, void/fall damage is cancelled - they'd otherwise
+    // be hurt before the async teleport lands (see onJoin). LOW so it runs before the void instakill.
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    public void onRelocatingDamage(EntityDamageEvent event) {
+        if (!(event.getEntity() instanceof Player player)) return;
+        if (!relocating.contains(player.getUniqueId())) return;
+
+        switch (event.getCause()) {
+            case VOID, FALL, FLY_INTO_WALL -> event.setCancelled(true);
+            default -> {
+            }
         }
     }
 }
