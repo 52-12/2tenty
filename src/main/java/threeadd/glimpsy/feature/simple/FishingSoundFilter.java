@@ -26,6 +26,8 @@ import java.util.UUID;
 public class FishingSoundFilter extends PacketListenerAbstract {
 
     private static final String FISHING_BOBBER_PREFIX = "minecraft:entity.fishing_bobber";
+    private static final String ENTITY_PREFIX = "minecraft:entity.";
+    private static final String SPLASH_SUFFIX = ".splash";
     private static final double OWN_SOUND_RADIUS_SQUARED = 4.0; // 2 blocks
 
     @Override
@@ -45,28 +47,46 @@ public class FishingSoundFilter extends PacketListenerAbstract {
 
         if (positional) {
             WrapperPlayServerSoundEffect wrapper = new WrapperPlayServerSoundEffect(event);
-            if (!isFishingSound(wrapper.getSound())) return;
-            if (isOwnSound(player, uuid, wrapper.getPosition())) return;
-        } else {
-            WrapperPlayServerEntitySoundEffect wrapper = new WrapperPlayServerEntitySoundEffect(event);
-            if (!isFishingSound(wrapper.getSound())) return;
-            if (wrapper.getEntityId() == player.getEntityId()) return;
+            String key = wrapper.getSound().getSoundId().toString();
+
+            boolean bobberSound = key.startsWith(FISHING_BOBBER_PREFIX);
+            boolean splashSound = key.startsWith(ENTITY_PREFIX) && key.endsWith(SPLASH_SUFFIX);
+            if (!bobberSound && !splashSound) return;
+
+            Vector3d position = wrapper.getPosition();
+            if (isNearOwnSound(player, uuid, position)) return;
+
+            // Others' bobber sounds always go; a generic splash variant only if it's actually at a
+            // bobber, so unrelated water splashes (boats, players) still play.
+            if (bobberSound || isNearAnyBobber(position)) event.setCancelled(true);
+            return;
         }
 
-        event.setCancelled(true);
-    }
+        WrapperPlayServerEntitySoundEffect wrapper = new WrapperPlayServerEntitySoundEffect(event);
+        String key = wrapper.getSound().getSoundId().toString();
 
-    private static boolean isFishingSound(Sound sound) {
-        return sound.getSoundId().toString().startsWith(FISHING_BOBBER_PREFIX);
+        boolean bobberSound = key.startsWith(FISHING_BOBBER_PREFIX);
+        boolean splashSound = key.startsWith(ENTITY_PREFIX) && key.endsWith(SPLASH_SUFFIX);
+        if (!bobberSound && !splashSound) return;
+
+        // Entity sounds aren't positional, so the only thing we can trust is "is it this player".
+        if (wrapper.getEntityId() != player.getEntityId() && bobberSound) event.setCancelled(true);
     }
 
     // A positional sound belongs to this player if it's at their own bobber or right on top of them
     // (vanilla plays the cast sound at the player).
-    private static boolean isOwnSound(Player player, UUID uuid, Vector3d position) {
+    private static boolean isNearOwnSound(Player player, UUID uuid, Vector3d position) {
         if (distanceSquared(player.getLocation(), position) <= OWN_SOUND_RADIUS_SQUARED) return true;
 
         Location ownBobber = FishingSounds.getOwnBobber(uuid);
         return ownBobber != null && distanceSquared(ownBobber, position) <= OWN_SOUND_RADIUS_SQUARED;
+    }
+
+    private static boolean isNearAnyBobber(Vector3d position) {
+        for (Location bobber : FishingSounds.getAllBobbers())
+            if (distanceSquared(bobber, position) <= OWN_SOUND_RADIUS_SQUARED) return true;
+
+        return false;
     }
 
     private static double distanceSquared(Location location, Vector3d position) {
