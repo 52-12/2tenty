@@ -4,15 +4,15 @@ import org.bukkit.Keyed;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Furnace;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.inventory.FurnaceStartSmeltEvent;
+import org.bukkit.event.inventory.FurnaceExtractEvent;
 import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
 import threeadd.glimpsy.feature.recipes.SaltRecipe;
 import threeadd.glimpsy.feature.recipes.SaltedJerkyRecipe;
-import threeadd.glimpsy.util.ScheduleUtil;
 
 public class SaltListener implements Listener {
 
@@ -38,42 +38,35 @@ public class SaltListener implements Listener {
         event.getInventory().setResult(null);
     }
 
-    // Water bucket -> Salt. A vanilla furnace recipe can't declare a container that's left behind,
-    // and the old furnace-extract refund only fired when a player pulled the salt out by hand, so
-    // hoppers / offline smelting silently lost the bucket. Instead the empty bucket is put into the
-    // furnace's top (input) slot once the water bucket has been consumed.
+    // Water bucket -> Salt. A vanilla furnace recipe can't leave a container behind (the only
+    // vanilla case, wet sponge, is hardcoded), and swapping the input slot from a smelt event is a
+    // timing lottery. So instead the empty bucket is put back into the furnace's top (input) slot
+    // when the salt is taken out - ready to refill and use again. If the slot is already occupied
+    // (e.g. a hopper refilled it), the buckets go to the player so none are lost.
     @EventHandler
-    public void onStartSmelt(FurnaceStartSmeltEvent event) {
-        if (event.getSource().getType() != Material.WATER_BUCKET) return;
+    public void onExtract(FurnaceExtractEvent event) {
+        if (event.getItemType() != Material.WHITE_CONCRETE_POWDER) return;
 
-        // Scheduled for when this smelt finishes, not for "now": FurnaceSmeltEvent fires around the
-        // point the input is consumed, so a 1-tick check could still see the water bucket and give
-        // up. getTotalCookTime() tells us exactly how long to wait.
+        int buckets = event.getItemAmount() / 2; // recipe yields 2 salt per water bucket
+        if (buckets <= 0) return;
+
         Block block = event.getBlock();
-        ScheduleUtil.scheduleSync(() -> placeEmptyBucket(block, 0), event.getTotalCookTime() + 1, ScheduleUtil.Unit.TICK);
-    }
+        if (block.getType() == Material.FURNACE) {
+            Furnace furnace = (Furnace) block.getState();
+            ItemStack input = furnace.getInventory().getSmelting();
 
-    private static void placeEmptyBucket(Block block, int attempt) {
-        if (block.getType() != Material.FURNACE) return;
+            if (input == null || input.getType().isAir()) {
+                int inSlot = Math.min(buckets, Material.BUCKET.getMaxStackSize());
+                furnace.getInventory().setSmelting(new ItemStack(Material.BUCKET, inSlot));
+                furnace.update(true);
 
-        Furnace furnace = (Furnace) block.getState();
-        ItemStack input = furnace.getInventory().getSmelting();
-
-        if (input == null || input.getType().isAir()) {
-            furnace.getInventory().setSmelting(new ItemStack(Material.BUCKET));
-            furnace.update(true);
-            return;
+                buckets -= inSlot;
+                if (buckets <= 0) return;
+            }
         }
 
-        // Water bucket still sitting there (timing drift) - wait a moment and look again.
-        if (input.getType() == Material.WATER_BUCKET) {
-            if (attempt < 10)
-                ScheduleUtil.scheduleSync(() -> placeEmptyBucket(block, attempt + 1), 2, ScheduleUtil.Unit.TICK);
-
-            return; // still smelting (or it stalled) - don't hand out a bucket for a smelt that hasn't happened
-        }
-
-        // Something else refilled the slot - drop the empty bucket on top so it isn't lost.
-        block.getWorld().dropItemNaturally(block.getLocation().add(0.5, 1.0, 0.5), new ItemStack(Material.BUCKET));
+        Player player = event.getPlayer();
+        for (ItemStack leftover : player.getInventory().addItem(new ItemStack(Material.BUCKET, buckets)).values())
+            player.getWorld().dropItemNaturally(player.getLocation(), leftover);
     }
 }
