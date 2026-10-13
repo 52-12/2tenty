@@ -186,6 +186,11 @@ nicknames:
   max-length: 24
 
 chat:
+  proximity:
+    # false turns off the whole proximity-fade feature (nobody sees it, even players who opted in
+    # with /proximitychat). When true, only players who opted in see distant chat fade; @mentions
+    # always stay highlighted for them.
+    enabled: false
   proximity-fade-max-distance: 300.0
 
 guardian-fishing:

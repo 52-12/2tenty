@@ -24,6 +24,7 @@ import threeadd.glimpsy.feature.simple.ChatDropoffCommand;
 import threeadd.glimpsy.feature.simple.ClearBedSpawnCommand;
 import threeadd.glimpsy.feature.simple.FishImmuneCommand;
 import threeadd.glimpsy.feature.simple.HatCommand;
+import threeadd.glimpsy.feature.simple.ProximityChatCommand;
 import threeadd.glimpsy.feature.simple.RightClickCraftingCommand;
 import threeadd.glimpsy.feature.simple.SuicideCommand;
 import threeadd.glimpsy.feature.simple.ToggleFishingSoundsCommand;
@@ -80,6 +81,7 @@ public class CustomCommandRegistry extends Registry<CustomCommand> {
                 new HeadCollectionsCommand(),
                 new AchievementsCommand(),
                 new ClearBedSpawnCommand(),
-                new ToggleFishingSoundsCommand());
+                new ToggleFishingSoundsCommand(),
+                new ProximityChatCommand());
     }
 }
