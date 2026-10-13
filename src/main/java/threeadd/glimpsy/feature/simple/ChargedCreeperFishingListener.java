@@ -72,6 +72,8 @@ public class ChargedCreeperFishingListener implements Listener {
         location.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, location, 20, 0.3, 0.3, 0.3);
 
         player.sendMessage(ComponentParser.parseRichString("Something charged bites at your line..."));
+
+        event.getHook().remove(); // end the cast so it can't also land a normal fish
     }
 
     @EventHandler
