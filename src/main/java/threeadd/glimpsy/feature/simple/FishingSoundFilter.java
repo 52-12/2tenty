@@ -62,10 +62,10 @@ public class FishingSoundFilter extends PacketListenerAbstract {
                 return;
             }
 
-            // The pull/reel is only wanted when YOU were just hooked (short window) - not the
-            // fisher's later casts elsewhere.
+            // Every reel is muted for muted players; if a rod hooks them, the tracker plays the pull
+            // sound back for them instead.
             if (key.equals(RETRIEVE_KEY)) {
-                if (!FishingSounds.wasRecentlyHooked(uuid)) event.setCancelled(true);
+                event.setCancelled(true);
                 return;
             }
 
@@ -91,7 +91,7 @@ public class FishingSoundFilter extends PacketListenerAbstract {
         String key = wrapper.getSound().getSoundId().toString();
 
         if (key.equals(RETRIEVE_KEY)) {
-            if (!FishingSounds.wasRecentlyHooked(uuid)) event.setCancelled(true);
+            event.setCancelled(true);
             return;
         }
 
