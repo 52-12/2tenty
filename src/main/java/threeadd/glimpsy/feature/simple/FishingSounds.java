@@ -15,13 +15,19 @@ import java.util.concurrent.ConcurrentHashMap;
  * sounds off stops hearing other players' (#16).
  * <p>
  * Also holds each player's own bobber location, kept current on the main thread by
- * {@link FishingBobberTracker} - the packet filter runs off-thread and can't query the world.
+ * {@link FishingBobberTracker} - the packet filter runs off-thread and can't query the world. A
+ * reeled-in bobber lingers a moment so the reel sound that arrives with it still counts as "yours".
  */
 public final class FishingSounds {
 
     private static final String MUTED_KEY = "fishing-sounds-muted";
+    private static final long BOBBER_LINGER_MILLIS = 1500;
 
-    private static final Map<UUID, Location> ownBobbers = new ConcurrentHashMap<>();
+    private static final Map<UUID, Location> activeBobbers = new ConcurrentHashMap<>();
+    private static final Map<UUID, CachedBobber> lastBobbers = new ConcurrentHashMap<>();
+
+    private record CachedBobber(Location location, long at) {
+    }
 
     private FishingSounds() {
     }
@@ -39,17 +45,32 @@ public final class FishingSounds {
     }
 
     static void setOwnBobber(UUID uuid, Location location) {
-        if (location == null) ownBobbers.remove(uuid);
-        else ownBobbers.put(uuid, location.clone());
+        if (location != null) {
+            Location copy = location.clone();
+            activeBobbers.put(uuid, copy);
+            lastBobbers.put(uuid, new CachedBobber(copy, System.currentTimeMillis()));
+            return;
+        }
+
+        Location previous = activeBobbers.remove(uuid);
+        if (previous != null) lastBobbers.put(uuid, new CachedBobber(previous, System.currentTimeMillis()));
     }
 
+    /** The player's own bobber - the live one, or its last position for a moment after reel-in. */
     public static Location getOwnBobber(UUID uuid) {
-        return ownBobbers.get(uuid);
+        Location active = activeBobbers.get(uuid);
+        if (active != null) return active;
+
+        CachedBobber cached = lastBobbers.get(uuid);
+        if (cached != null && System.currentTimeMillis() - cached.at() <= BOBBER_LINGER_MILLIS)
+            return cached.location();
+
+        return null;
     }
 
     /** Every currently-active bobber location, for matching generic splash variants to a bobber. */
     public static Iterable<Location> getAllBobbers() {
-        return ownBobbers.values();
+        return activeBobbers.values();
     }
 
     public static void playCatch(Location location, Sound sound, float volume, float pitch, Player source) {
