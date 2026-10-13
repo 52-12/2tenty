@@ -109,34 +109,34 @@ public class Hologram {
         HologramLine line = addLine(base);
         if (totalTicks <= 0) return line;
 
+        // Update the colour a few ticks apart instead of every tick - interpolation doesn't need
+        // 20 fps, and each step sends TextDisplay metadata to every viewer of the line.
+        final int stepTicks = 3;
         final long[] tick = {0};
 
         BukkitTask fadeTask = ScheduleUtil.scheduleSync(() -> {
 
-            if (!lines.contains(line)) {
+            if (line.getDisplay() == null || !line.getDisplay().isValid()) {
                 // hologram removed before fade finished
                 return;
             }
 
-            if (tick[0] >= totalTicks) {
+            long current = tick[0];
+            if (current >= totalTicks) {
                 removeLine(lines.indexOf(line));
                 return;
             }
 
-            float fraction = (float) tick[0] / totalTicks;
+            float fraction = (float) current / totalTicks;
 
             int r = (int) (start.red() + fraction * (end.red() - start.red()));
             int g = (int) (start.green() + fraction * (end.green() - start.green()));
             int b = (int) (start.blue() + fraction * (end.blue() - start.blue()));
 
-            TextColor fade = TextColor.color(r, g, b);
-            Component updated = base.color(fade);
+            line.setText(base.color(TextColor.color(r, g, b)));
+            tick[0] = current + stepTicks;
 
-            line.setText(updated);
-
-            tick[0]++;
-
-        }, 0, 1, ScheduleUtil.Unit.TICK);
+        }, 0, stepTicks, ScheduleUtil.Unit.TICK);
 
         activeTasks.add(fadeTask);
         return line;

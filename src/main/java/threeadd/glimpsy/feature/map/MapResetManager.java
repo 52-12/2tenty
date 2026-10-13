@@ -79,7 +79,7 @@ public class MapResetManager extends ListeningManager {
                     // Roll the target forward a full interval and persist it, so a restart before
                     // the next reset doesn't lose the schedule.
                     MapResetManager.time = new MapResetTime();
-                    MapResetRepository.getInstance().saveSync(time);
+                    MapResetRepository.getInstance().saveAsync(time);
                     schedule();
                 },
                 getTicksUntil(time.getTime()), ScheduleUtil.Unit.TICK
@@ -151,12 +151,12 @@ public class MapResetManager extends ListeningManager {
     public static long addSeconds(long delta) {
         if (paused) {
             pausedRemainingSeconds = Math.max(0, pausedRemainingSeconds + delta);
-            MapResetRepository.getInstance().saveResetPausedSync(true, pausedRemainingSeconds);
+            MapResetRepository.getInstance().saveResetPausedAsync(true, pausedRemainingSeconds);
         } else {
             LocalDateTime newTime = time.getTime().plusSeconds(delta);
             if (newTime.isBefore(LocalDateTime.now())) newTime = LocalDateTime.now();
             time = new MapResetTime(MapResetTime.key, newTime);
-            MapResetRepository.getInstance().saveSync(time);
+            MapResetRepository.getInstance().saveAsync(time);
             schedule();
         }
         return getRemainingSeconds();
@@ -166,10 +166,10 @@ public class MapResetManager extends ListeningManager {
     public static void resetCountdown() {
         if (paused) {
             pausedRemainingSeconds = intervalSeconds();
-            MapResetRepository.getInstance().saveResetPausedSync(true, pausedRemainingSeconds);
+            MapResetRepository.getInstance().saveResetPausedAsync(true, pausedRemainingSeconds);
         } else {
             time = new MapResetTime();
-            MapResetRepository.getInstance().saveSync(time);
+            MapResetRepository.getInstance().saveAsync(time);
             schedule();
         }
     }
@@ -181,7 +181,7 @@ public class MapResetManager extends ListeningManager {
         pausedRemainingSeconds = getRemainingSeconds();
         paused = true;
         cancelScheduled();
-        MapResetRepository.getInstance().saveResetPausedSync(true, pausedRemainingSeconds);
+        MapResetRepository.getInstance().saveResetPausedAsync(true, pausedRemainingSeconds);
         return true;
     }
 
@@ -192,8 +192,8 @@ public class MapResetManager extends ListeningManager {
         paused = false;
         // Continue from where it froze: the new target is now + whatever was left.
         time = new MapResetTime(MapResetTime.key, LocalDateTime.now().plusSeconds(pausedRemainingSeconds));
-        MapResetRepository.getInstance().saveSync(time);
-        MapResetRepository.getInstance().saveResetPausedSync(false, 0);
+        MapResetRepository.getInstance().saveAsync(time);
+        MapResetRepository.getInstance().saveResetPausedAsync(false, 0);
         schedule();
         return true;
     }
@@ -205,7 +205,7 @@ public class MapResetManager extends ListeningManager {
         LocalDateTime now = LocalDateTime.now();
         lastResetMillis = now.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
 
-        MapResetRepository.getInstance().saveLastResetSync(now);
+        MapResetRepository.getInstance().saveLastResetAsync(now);
     }
 
     // Records a full reset (world + inventories), so players who were offline for it get their
@@ -214,7 +214,7 @@ public class MapResetManager extends ListeningManager {
         LocalDateTime now = LocalDateTime.now();
         fullResetMillis = now.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
 
-        MapResetRepository.getInstance().saveFullResetSync(now);
+        MapResetRepository.getInstance().saveFullResetAsync(now);
     }
 
     @Override

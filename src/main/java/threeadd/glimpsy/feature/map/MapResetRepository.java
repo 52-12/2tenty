@@ -48,6 +48,22 @@ public class MapResetRepository extends Repository<MapResetTime> {
                 paused ? 1 : 0, remainingSeconds);
     }
 
+    public void saveAsync(MapResetTime data) {
+        runAsync(() -> saveSync(data));
+    }
+
+    public void saveResetPausedAsync(boolean paused, long remainingSeconds) {
+        runAsync(() -> saveResetPausedSync(paused, remainingSeconds));
+    }
+
+    public void saveLastResetAsync(LocalDateTime time) {
+        runAsync(() -> saveLastResetSync(time));
+    }
+
+    public void saveFullResetAsync(LocalDateTime time) {
+        runAsync(() -> saveFullResetSync(time));
+    }
+
     public Optional<ResetPauseState> loadResetPausedSync() {
         try (Connection conn = Glimpsy.getDataBase().getConnection();
              PreparedStatement ps = conn.prepareStatement("SELECT * FROM map_reset_state WHERE id = 0");
