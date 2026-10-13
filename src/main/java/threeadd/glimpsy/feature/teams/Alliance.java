@@ -1,5 +1,8 @@
 package threeadd.glimpsy.feature.teams;
 
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -13,6 +16,7 @@ public class Alliance {
 
     private final UUID id;
     private String rawName;
+    private String cachedPlainName;
     private final Set<UUID> teamIds = ConcurrentHashMap.newKeySet();
 
     public Alliance(UUID id) {
@@ -29,6 +33,16 @@ public class Alliance {
 
     public void setRawName(String rawName) {
         this.rawName = rawName;
+        this.cachedPlainName = null;
+    }
+
+    /** The visible text of the raw MiniMessage name, parsed once and cached until it's renamed. */
+    public String getPlainName() {
+        if (cachedPlainName == null)
+            cachedPlainName = PlainTextComponentSerializer.plainText()
+                    .serialize(MiniMessage.miniMessage().deserialize(rawName));
+
+        return cachedPlainName;
     }
 
     public Set<UUID> getTeamIds() {
