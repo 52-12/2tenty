@@ -20,7 +20,7 @@ public class ToggleFishingSoundsCommand extends CustomCommand {
         FishingSounds.setMuted(player, nowMuted);
 
         player.sendMessage(ComponentParser.parseRichString(nowMuted
-                ? "<green>Fishing sounds disabled - you won't hear other players' catches"
+                ? "<green>Fishing sounds disabled - fishing bobber sounds will be hidden from you"
                 : "<red>Fishing sounds enabled again"));
 
         return SUCCESS;
