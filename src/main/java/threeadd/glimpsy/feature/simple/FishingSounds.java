@@ -25,6 +25,7 @@ public final class FishingSounds {
 
     private static final Map<UUID, Location> activeBobbers = new ConcurrentHashMap<>();
     private static final Map<UUID, CachedBobber> lastBobbers = new ConcurrentHashMap<>();
+    private static final Map<UUID, Long> recentlyHooked = new ConcurrentHashMap<>();
 
     private record CachedBobber(Location location, long at) {
     }
@@ -71,6 +72,16 @@ public final class FishingSounds {
     /** Every currently-active bobber location, for matching generic splash variants to a bobber. */
     public static Iterable<Location> getAllBobbers() {
         return activeBobbers.values();
+    }
+
+    /** Records that this player is the one a rod just hooked - so their own being-reeled sounds play. */
+    public static void markHooked(Player player) {
+        recentlyHooked.put(player.getUniqueId(), System.currentTimeMillis());
+    }
+
+    public static boolean wasRecentlyHooked(UUID uuid) {
+        Long at = recentlyHooked.get(uuid);
+        return at != null && System.currentTimeMillis() - at <= BOBBER_LINGER_MILLIS;
     }
 
     public static void playCatch(Location location, Sound sound, float volume, float pitch, Player source) {
