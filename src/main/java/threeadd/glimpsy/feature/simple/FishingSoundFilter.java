@@ -12,8 +12,9 @@ import org.bukkit.entity.Player;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Silences other players' fishing sounds for anyone who opted out with /togglefishingsounds. Those
@@ -29,15 +30,31 @@ public class FishingSoundFilter extends PacketListenerAbstract {
     private static final String FISHING_BOBBER_PREFIX = "minecraft:entity.fishing_bobber";
     private static final String THROW_KEY = "minecraft:entity.fishing_bobber.throw";
     private static final String RETRIEVE_KEY = "minecraft:entity.fishing_bobber.retrieve";
-    private static final String EXPERIENCE_PICKUP_KEY = "minecraft:entity.experience_orb.pickup";
     private static final String ENTITY_PREFIX = "minecraft:entity.";
     private static final String SPLASH_SUFFIX = ".splash";
 
     private static final double OWN_SOUND_RADIUS_SQUARED = 1.0; // 1 block - bobber sounds are at the bobber
 
-    // TEMPORARY: cancel every XP-pickup chime for everyone, to prove whether it's server- or
-    // client-side. Remove once confirmed.
-    private static final AtomicBoolean xpTestLogged = new AtomicBoolean();
+    // --- TEMPORARY XP DIAGNOSTIC (remove once confirmed) -------------------------------------
+    // Logs every distinct sound key once, and cancels any XP/orb sound for everyone.
+    private static final Set<String> loggedKeys = ConcurrentHashMap.newKeySet();
+
+    private static boolean isXpTestSound(String key) {
+        String lower = key.toLowerCase();
+        return lower.contains("experience") || lower.contains("orb") || lower.contains("levelup")
+                || lower.contains("level_up");
+    }
+
+    private static void diagnose(String key, PacketSendEvent event) {
+        if (loggedKeys.size() < 2000 && loggedKeys.add(key))
+            log.info("[fishing-sound] sound key seen: {}", key);
+
+        if (isXpTestSound(key)) {
+            log.info("[fishing-sound] CANCELLING xp sound: {}", key);
+            event.setCancelled(true);
+        }
+    }
+    // --- end temporary -----------------------------------------------------------------------
 
     @Override
     public void onPacketSend(PacketSendEvent event) {
@@ -46,6 +63,11 @@ public class FishingSoundFilter extends PacketListenerAbstract {
         if (!positional && !entitySound) return;
 
         if (entitySound) {
+            WrapperPlayServerEntitySoundEffect wrapper = new WrapperPlayServerEntitySoundEffect(event);
+            String key = wrapper.getSound().getSoundId().toString();
+            diagnose(key, event);
+            if (event.isCancelled()) return;
+
             UUID id = event.getUser().getUUID();
             if (id == null || !FishingSounds.isMuted(id)) return;
 
@@ -54,9 +76,6 @@ public class FishingSoundFilter extends PacketListenerAbstract {
                 event.setCancelled(true);
                 return;
             }
-
-            WrapperPlayServerEntitySoundEffect wrapper = new WrapperPlayServerEntitySoundEffect(event);
-            String key = wrapper.getSound().getSoundId().toString();
 
             if (key.equals(RETRIEVE_KEY)) {
                 if (!FishingSounds.wasRecentlyHooked(id)) event.setCancelled(true);
@@ -73,14 +92,8 @@ public class FishingSoundFilter extends PacketListenerAbstract {
 
         WrapperPlayServerSoundEffect wrapper = new WrapperPlayServerSoundEffect(event);
         String key = wrapper.getSound().getSoundId().toString();
-
-        // --- TEMPORARY XP TEST ---
-        if (key.equals(EXPERIENCE_PICKUP_KEY)) {
-            if (xpTestLogged.compareAndSet(false, true))
-                log.info("[fishing-sound] cancelling ALL experience_orb.pickup sounds (client-side test)");
-            event.setCancelled(true);
-            return;
-        }
+        diagnose(key, event);
+        if (event.isCancelled()) return;
 
         UUID uuid = event.getUser().getUUID();
         if (uuid == null || !FishingSounds.isMuted(uuid)) return;
