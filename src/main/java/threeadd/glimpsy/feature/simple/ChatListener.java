@@ -10,6 +10,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerQuitEvent;
 import threeadd.glimpsy.feature.nickname.NicknameManager;
 import threeadd.glimpsy.feature.stats.PlayerStats;
 import threeadd.glimpsy.feature.stats.StatCategory;
@@ -173,5 +174,10 @@ public class ChatListener implements Listener {
             builder.append(child);
 
         return builder.build();
+    }
+
+    @EventHandler
+    public void onQuit(PlayerQuitEvent event) {
+        ChatDropoffManager.clear(event.getPlayer());
     }
 }

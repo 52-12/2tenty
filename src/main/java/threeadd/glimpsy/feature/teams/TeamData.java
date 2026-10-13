@@ -1,5 +1,7 @@
 package threeadd.glimpsy.feature.teams;
 
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.block.banner.Pattern;
 
 import java.util.List;
@@ -18,6 +20,7 @@ public class TeamData {
 
     private final UUID id;
     private String rawName;
+    private String cachedPlainName;
     private UUID owner;
     private InviteMode inviteMode = InviteMode.OWNER_ONLY;
 
@@ -53,6 +56,16 @@ public class TeamData {
 
     public void setRawName(String rawName) {
         this.rawName = rawName;
+        this.cachedPlainName = null;
+    }
+
+    /** The visible text of the raw MiniMessage name, parsed once and cached until it's renamed. */
+    public String getPlainName() {
+        if (cachedPlainName == null)
+            cachedPlainName = PlainTextComponentSerializer.plainText()
+                    .serialize(MiniMessage.miniMessage().deserialize(rawName));
+
+        return cachedPlainName;
     }
 
     public UUID getOwner() {

@@ -153,12 +153,9 @@ public class TeamManager extends ListeningManager {
     }
 
     private static @Nullable TeamData findTeamByPlainName(String plainName) {
-        for (TeamData team : teamsById.values()) {
-            String existingPlain = PlainTextComponentSerializer.plainText()
-                    .serialize(MiniMessage.miniMessage().deserialize(team.getRawName()));
+        for (TeamData team : teamsById.values())
+            if (team.getPlainName().equalsIgnoreCase(plainName)) return team;
 
-            if (existingPlain.equalsIgnoreCase(plainName)) return team;
-        }
         return null;
     }
 
@@ -512,11 +509,7 @@ public class TeamManager extends ListeningManager {
     private static @Nullable Alliance findAllianceByPlainName(String plainName) {
         for (Alliance alliance : alliancesById.values()) {
             if (alliance.getRawName() == null) continue;
-
-            String existingPlain = PlainTextComponentSerializer.plainText()
-                    .serialize(MiniMessage.miniMessage().deserialize(alliance.getRawName()));
-
-            if (existingPlain.equalsIgnoreCase(plainName)) return alliance;
+            if (alliance.getPlainName().equalsIgnoreCase(plainName)) return alliance;
         }
         return null;
     }
