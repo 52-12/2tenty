@@ -62,8 +62,9 @@ public final class Glimpsy extends JavaPlugin {
         Glimpsy.instance = this;
 
         ConfigManager.load();
-        if (ConfigMigrator.migrate()) ConfigManager.reload();
+        if (ConfigMigrator.migrate("config.yml")) ConfigManager.reload();
         Messages.load();
+        if (ConfigMigrator.migrate("messages.yml")) Messages.reload();
         PacketEvents.getAPI().init();
         PacketEvents.getAPI().getEventManager().registerListener(new threeadd.glimpsy.feature.simple.FishingSoundFilter());
 

@@ -27,12 +27,12 @@ public final class ConfigMigrator {
     }
 
     /** @return true if the file was changed and should be reloaded. */
-    public static boolean migrate() {
+    public static boolean migrate(String fileName) {
         Glimpsy plugin = Glimpsy.getInstance();
-        File file = new File(plugin.getDataFolder(), "config.yml");
-        if (!file.exists()) return false; // saveDefaultConfig already wrote the fresh, complete file
+        File file = new File(plugin.getDataFolder(), fileName);
+        if (!file.exists()) return false; // saveDefaultConfig/saveResource writes the fresh, complete file
 
-        try (InputStream in = plugin.getResource("config.yml")) {
+        try (InputStream in = plugin.getResource(fileName)) {
             if (in == null) return false;
 
             List<String> defaults = readAll(in);
@@ -42,10 +42,10 @@ public final class ConfigMigrator {
             if (merged.equals(user)) return false;
 
             Files.write(file.toPath(), merged, StandardCharsets.UTF_8);
-            plugin.getLogger().info("Updated config.yml with any new keys (your existing values were kept)");
+            plugin.getLogger().info("Updated " + fileName + " with any new keys (your existing values were kept)");
             return true;
         } catch (Exception e) {
-            plugin.getLogger().warning("Couldn't auto-update config.yml: " + e.getMessage());
+            plugin.getLogger().warning("Couldn't auto-update " + fileName + ": " + e.getMessage());
             return false;
         }
     }
