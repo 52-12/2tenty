@@ -64,6 +64,13 @@ public class TeamNameValidator {
 
         String plainText = PlainTextComponentSerializer.plainText().serialize(parsed);
 
+        // MiniMessage is lenient, so a tag it can't resolve (e.g. a bare <color>, which needs an
+        // argument like <color:red>) is swallowed and left in the text verbatim. Spot the leftover
+        // markup and give the colour-tag hint, rather than the misleading "letters/numbers only"
+        // error the whitelist below would otherwise produce.
+        if (plainText.indexOf('<') >= 0 || plainText.indexOf('>') >= 0)
+            return Result.fail(Messages.get("teams.name-unparseable", "That name couldn't be parsed - check your color tags"));
+
         if (plainText.isBlank())
             return Result.fail(Messages.get("teams.name-empty", "Team names can't be empty"));
 
