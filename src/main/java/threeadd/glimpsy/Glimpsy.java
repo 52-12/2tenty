@@ -17,6 +17,7 @@ import threeadd.glimpsy.util.listener.ListenerRegistry;
 import threeadd.glimpsy.util.manager.Manager;
 import threeadd.glimpsy.util.manager.ManagerRegistry;
 import threeadd.glimpsy.util.config.ConfigManager;
+import threeadd.glimpsy.util.config.ConfigMigrator;
 import threeadd.glimpsy.util.config.Messages;
 import threeadd.glimpsy.util.persistence.DataBase;
 import threeadd.glimpsy.util.recipes.CustomRecipe;
@@ -61,6 +62,7 @@ public final class Glimpsy extends JavaPlugin {
         Glimpsy.instance = this;
 
         ConfigManager.load();
+        if (ConfigMigrator.migrate()) ConfigManager.reload();
         Messages.load();
         PacketEvents.getAPI().init();
         PacketEvents.getAPI().getEventManager().registerListener(new threeadd.glimpsy.feature.simple.FishingSoundFilter());
