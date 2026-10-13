@@ -56,8 +56,8 @@ public class PlayerFishingListener implements Listener {
         Location hookLocation = event.getHook().getLocation();
         caught.teleport(hookLocation.clone().add(0, 1, 0));
 
-        hookLocation.getWorld().playSound(hookLocation, Sound.ENTITY_GENERIC_SPLASH, 1.0F, 1.0F);
         hookLocation.getWorld().spawnParticle(Particle.SPLASH, hookLocation, 30, 0.3, 0.3, 0.3);
+        FishingSounds.playCatch(hookLocation, Sound.ENTITY_GENERIC_SPLASH, 1.0F, 1.0F, fisher);
 
         AchievementManager.award(fisher, Achievement.OH_HELLO_THERE);
 
