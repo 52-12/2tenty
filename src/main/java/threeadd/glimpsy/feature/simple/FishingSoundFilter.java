@@ -9,7 +9,6 @@ import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEn
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSoundEffect;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.entity.FishHook;
 import org.bukkit.entity.Player;
 
 import java.util.UUID;
@@ -20,7 +19,9 @@ import java.util.UUID;
  * the only way to drop them for one player is at the packet level - what issue #16 suggested.
  * <p>
  * A muted player still hears their <b>own</b> rod: a fishing sound is kept if it's near the player
- * or near a bobber they cast, and dropped otherwise.
+ * or near a bobber they cast (see {@link FishingBobberTracker}), and dropped otherwise.
+ * <p>
+ * Runs on a Netty thread, so it must never touch the world/chunks - everything it needs is cached.
  */
 public class FishingSoundFilter extends PacketListenerAbstract {
 
@@ -42,16 +43,13 @@ public class FishingSoundFilter extends PacketListenerAbstract {
             return;
         }
 
-        FishHook ownHook = findOwnHook(player);
-
         if (positional) {
             WrapperPlayServerSoundEffect wrapper = new WrapperPlayServerSoundEffect(event);
             if (!isFishingSound(wrapper.getSound())) return;
-            if (isOwnSound(player, ownHook, wrapper.getPosition())) return;
+            if (isOwnSound(player, uuid, wrapper.getPosition())) return;
         } else {
             WrapperPlayServerEntitySoundEffect wrapper = new WrapperPlayServerEntitySoundEffect(event);
             if (!isFishingSound(wrapper.getSound())) return;
-            if (ownHook != null && wrapper.getEntityId() == ownHook.getEntityId()) return;
             if (wrapper.getEntityId() == player.getEntityId()) return;
         }
 
@@ -64,9 +62,11 @@ public class FishingSoundFilter extends PacketListenerAbstract {
 
     // A positional sound belongs to this player if it's at their own bobber or right on top of them
     // (vanilla plays the cast sound at the player).
-    private static boolean isOwnSound(Player player, FishHook ownHook, Vector3d position) {
+    private static boolean isOwnSound(Player player, UUID uuid, Vector3d position) {
         if (distanceSquared(player.getLocation(), position) <= OWN_SOUND_RADIUS_SQUARED) return true;
-        return ownHook != null && distanceSquared(ownHook.getLocation(), position) <= OWN_SOUND_RADIUS_SQUARED;
+
+        Location ownBobber = FishingSounds.getOwnBobber(uuid);
+        return ownBobber != null && distanceSquared(ownBobber, position) <= OWN_SOUND_RADIUS_SQUARED;
     }
 
     private static double distanceSquared(Location location, Vector3d position) {
@@ -74,14 +74,5 @@ public class FishingSoundFilter extends PacketListenerAbstract {
         double dy = location.getY() - position.getY();
         double dz = location.getZ() - position.getZ();
         return dx * dx + dy * dy + dz * dz;
-    }
-
-    private static FishHook findOwnHook(Player player) {
-        for (FishHook hook : player.getWorld().getEntitiesByClass(FishHook.class)) {
-            if (hook.getShooter() instanceof Player shooter && shooter.getUniqueId().equals(player.getUniqueId()))
-                return hook;
-        }
-
-        return null;
     }
 }
