@@ -271,16 +271,21 @@ public class MapResetManager extends ListeningManager {
         Player player = event.getPlayer();
 
         Long lastSeen = lastSeenMillis.get(player.getUniqueId());
-        if (lastSeen == null) return; // never tracked (a brand new player) - nothing to compare
+        boolean inVoid = player.getLocation().getY() < player.getWorld().getMinHeight();
+
+        // Never tracked (a brand new player) and not in the void - nothing to compare or fix.
+        if (lastSeen == null && !inVoid) return;
 
         // Offline through a full reset -> their saved inventory is from before the wipe, clear it
-        if (fullResetMillis != 0 && lastSeen < fullResetMillis) {
+        if (fullResetMillis != 0 && lastSeen != null && lastSeen < fullResetMillis) {
             ScheduleUtil.scheduleSync(() -> player.getInventory().clear());
         }
 
-        // Offline through a (world) reset -> their saved position is now void, send them to spawn.
-        // Same elder guardian effect they'd have seen in the moment, but with no chat line.
-        if (lastResetMillis != 0 && lastSeen < lastResetMillis) {
+        // Offline through a (world) reset -> their saved position is now void. Also cover a plain
+        // void login (saved position was above nothing) so nobody is left falling. Same elder
+        // guardian effect as an in-person reset, but with no chat line.
+        boolean offlineThroughReset = lastResetMillis != 0 && lastSeen != null && lastSeen < lastResetMillis;
+        if (offlineThroughReset || inVoid) {
             Location spawnLocation = WorldSpawnManager.getCustomSpawn().orElse(player.getWorld().getSpawnLocation());
             ScheduleUtil.scheduleSync(() -> player.teleportAsync(spawnLocation).thenAccept(success -> {
                 if (success) player.showElderGuardian(true);

@@ -178,9 +178,7 @@ public class MapSetter {
 
         log.info("Reset the map in ({} blocks affected, {} units) {}s", job.totalBlocks, job.unitCount, seconds);
 
-        // Players were already sent to spawn when the reset began (see beginReset); this only
-        // records the reset so players who were offline rejoin into the new world safely.
-        MapResetManager.recordReset();
+        // The reset was already recorded (and players moved) when it began - see beginReset.
         RESETTING.set(false);
     }
 
@@ -290,6 +288,11 @@ public class MapSetter {
     // Announces the reset and moves everyone to spawn up front, so nobody is standing on ground
     // that's about to be deleted underneath them.
     private static void beginReset(org.bukkit.World bukkitWorld) {
+        // Recorded at the start, not the end: the wipe can run for a long time, and a player who
+        // was offline when it began must be moved to spawn whenever they next log in, even if the
+        // reset hasn't finished yet (#6).
+        MapResetManager.recordReset();
+
         Location spawnLocation = WorldSpawnManager.getCustomSpawn().orElse(bukkitWorld.getSpawnLocation());
 
         Component alertSymbol = Component.text('⚠')
