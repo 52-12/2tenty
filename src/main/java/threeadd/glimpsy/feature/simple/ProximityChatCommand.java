@@ -16,18 +16,12 @@ public class ProximityChatCommand extends CustomCommand {
         Player player = getPlayer(ctx);
         if (player == null) return SUCCESS;
 
-        boolean nowEnabled = !ProximityChat.isOptedIn(player);
+        boolean nowEnabled = !ProximityChat.isEnabledFor(player);
         ProximityChat.setEnabled(player, nowEnabled);
 
-        if (nowEnabled && !ProximityChat.globallyEnabled()) {
-            player.sendMessage(ComponentParser.parseRichString(
-                    "<error>Proximity chat is turned off server-wide, so this won't do anything yet"));
-            return SUCCESS;
-        }
-
         player.sendMessage(ComponentParser.parseRichString(nowEnabled
-                ? "<success>Proximity chat on - distant chat fades toward gray, and @mentions stay highlighted"
-                : "<error>Proximity chat off - chat is shown at full color again"));
+                ? "<green>Proximity chat on - distant chat fades toward gray, and @mentions stay highlighted"
+                : "<red>Proximity chat off - chat is shown at full color again"));
 
         return SUCCESS;
     }
