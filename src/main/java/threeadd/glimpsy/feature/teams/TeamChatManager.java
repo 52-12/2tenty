@@ -4,38 +4,31 @@ import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import threeadd.glimpsy.util.config.Messages;
+import threeadd.glimpsy.util.preferences.PlayerPreferences;
 import threeadd.glimpsy.util.text.ComponentParser;
 
-import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Per-player "team chat mode" toggle - while enabled, a player's normal chat messages are
- * redirected to their team instead of being sent publicly (see TeamChatListener). Session-only,
- * not persisted - resets to off on rejoin.
+ * redirected to their team instead of being sent publicly (see TeamChatListener). Persisted across
+ * restarts (#3).
  */
 public class TeamChatManager {
 
-    private static final Set<UUID> enabled = ConcurrentHashMap.newKeySet();
+    private static final String ENABLED_KEY = "team-chat";
 
     public static boolean isEnabled(Player player) {
-        return enabled.contains(player.getUniqueId());
+        return PlayerPreferences.get(player, ENABLED_KEY, false);
     }
 
     /**
      * @return the new state (true if team chat is now enabled)
      */
     public static boolean toggle(Player player) {
-        UUID id = player.getUniqueId();
-        if (enabled.remove(id)) return false;
-
-        enabled.add(id);
-        return true;
-    }
-
-    public static void onQuit(Player player) {
-        enabled.remove(player.getUniqueId());
+        boolean nowEnabled = !isEnabled(player);
+        PlayerPreferences.set(player, ENABLED_KEY, nowEnabled);
+        return nowEnabled;
     }
 
     /**

@@ -12,13 +12,11 @@ import org.bukkit.event.player.PlayerFishEvent;
 import threeadd.glimpsy.feature.achievement.Achievement;
 import threeadd.glimpsy.feature.achievement.AchievementManager;
 import threeadd.glimpsy.util.config.ConfigManager;
+import threeadd.glimpsy.util.preferences.PlayerPreferences;
 import threeadd.glimpsy.util.text.ComponentParser;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class PlayerFishingListener implements Listener {
@@ -27,17 +25,14 @@ public class PlayerFishingListener implements Listener {
         return ConfigManager.getDouble("player-fishing.catch-chance", 0.001); // per successful catch - very rare
     }
 
-    private static final Set<UUID> immunePlayers = ConcurrentHashMap.newKeySet();
+    private static final String IMMUNE_KEY = "fish-immune";
 
     public static boolean isImmune(Player player) {
-        return immunePlayers.contains(player.getUniqueId());
+        return PlayerPreferences.get(player, IMMUNE_KEY, false);
     }
 
     public static void setImmune(Player player, boolean immune) {
-        if (immune)
-            immunePlayers.add(player.getUniqueId());
-        else
-            immunePlayers.remove(player.getUniqueId());
+        PlayerPreferences.set(player, IMMUNE_KEY, immune);
     }
 
     // NORMAL: runs after the guardian roll (LOW) but before the creeper roll (HIGH). ignoreCancelled

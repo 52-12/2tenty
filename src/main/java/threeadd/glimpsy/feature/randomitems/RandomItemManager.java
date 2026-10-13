@@ -127,8 +127,10 @@ public class RandomItemManager extends ListeningManager {
         UUID id = event.getPlayer().getUniqueId();
         RandomItemsInfo info = randomItemInfoMap.remove(id);
 
-        // Don't save useless data (If player joins without data it takes default states)
-        if (info == null || info.getStates().equals(RandomItemsInfo.createDefaultStates())) {
+        // Don't save useless data (If player joins without data it takes default states). isDefault()
+        // includes the full-inventory alert flag, so a player who only changed that still gets saved
+        // (the old check compared material states only and wiped the alert preference - #3).
+        if (info == null || info.isDefault()) {
             RandomItemsRepository.getInstance().deleteAsync(id).thenRun(() ->
                     log.info("Deleted default items for {}", id));
 
