@@ -9,7 +9,9 @@ import threeadd.glimpsy.util.config.ConfigManager;
 import threeadd.glimpsy.util.manager.ListeningManager;
 import threeadd.glimpsy.util.preferences.PlayerPreferences;
 
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -55,7 +57,8 @@ public class ScoreboardManager extends ListeningManager {
             return;
         }
 
-        boards.computeIfAbsent(id, x -> new SidebarBoard(player)).update(player);
+        boards.computeIfAbsent(id, x -> new SidebarBoard(player))
+                .update(player, ScoreboardLines.shared(), onlineNames());
     }
 
     @Override
@@ -78,6 +81,10 @@ public class ScoreboardManager extends ListeningManager {
     private void tick() {
         boolean globalEnabled = enabled();
 
+        // Built once per second instead of once per player.
+        ScoreboardLines.Shared shared = globalEnabled ? ScoreboardLines.shared() : null;
+        Set<String> onlineNames = globalEnabled ? onlineNames() : null;
+
         for (Player player : Bukkit.getOnlinePlayers()) {
             UUID id = player.getUniqueId();
 
@@ -87,7 +94,13 @@ public class ScoreboardManager extends ListeningManager {
                 continue;
             }
 
-            boards.computeIfAbsent(id, x -> new SidebarBoard(player)).update(player);
+            boards.computeIfAbsent(id, x -> new SidebarBoard(player)).update(player, shared, onlineNames);
         }
+    }
+
+    private static Set<String> onlineNames() {
+        Set<String> names = new HashSet<>();
+        for (Player player : Bukkit.getOnlinePlayers()) names.add(player.getName());
+        return names;
     }
 }

@@ -58,27 +58,28 @@ class SidebarBoard {
         this.nametagTeam = scoreboard.registerNewTeam(NAMETAG_TEAM);
         nametagTeam.setOption(Team.Option.COLLISION_RULE, Team.OptionStatus.NEVER);
         nametagTeam.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.NEVER);
-        syncNametagMembers();
+
+        Set<String> online = new HashSet<>();
+        for (Player onlinePlayer : Bukkit.getOnlinePlayers()) online.add(onlinePlayer.getName());
+        syncNametagMembers(online);
 
         player.setScoreboard(scoreboard);
     }
 
-    void update(Player player) {
-        objective.displayName(ScoreboardLines.title());
+    void update(Player player, ScoreboardLines.Shared shared, Set<String> onlineNames) {
+        objective.displayName(shared.title());
 
-        List<Component> lines = ScoreboardLines.build(player);
+        List<Component> lines = ScoreboardLines.build(player, shared);
         for (int i = 0; i < lineTeams.length; i++)
             lineTeams[i].prefix(i < lines.size() ? lines.get(i) : Component.empty());
 
-        syncNametagMembers();
+        syncNametagMembers(onlineNames);
     }
 
     // Keeps this board's mirrored nametag team in step with who's online, adding/removing only on
-    // real changes (so we don't churn collision/nametag packets every tick).
-    private void syncNametagMembers() {
-        Set<String> online = new HashSet<>();
-        for (Player p : Bukkit.getOnlinePlayers()) online.add(p.getName());
-
+    // real changes (so we don't churn collision/nametag packets every tick). The online-name set is
+    // shared per tick by ScoreboardManager instead of being rebuilt per board.
+    private void syncNametagMembers(Set<String> online) {
         for (String name : online)
             if (nametagMembers.add(name)) nametagTeam.addEntry(name);
 

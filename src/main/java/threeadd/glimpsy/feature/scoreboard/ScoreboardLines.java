@@ -6,12 +6,11 @@ import org.bukkit.entity.Player;
 import threeadd.glimpsy.feature.map.MapResetManager;
 import threeadd.glimpsy.feature.stats.PlayerStats;
 import threeadd.glimpsy.feature.stats.StatsManager;
+import threeadd.glimpsy.feature.timezone.TimeDisplay;
 import threeadd.glimpsy.feature.timezone.TimezoneManager;
+import threeadd.glimpsy.feature.timezone.TimezonePreferences;
 import threeadd.glimpsy.util.config.Messages;
 
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -20,6 +19,9 @@ import java.util.Locale;
  * Builds the sidebar's title and body lines from live data. Every line is a message key, so the
  * whole board is re-themeable/translatable from messages.yml. The stats shown are the viewing
  * player's own (matching /stats).
+ * <p>
+ * The lines that are the same for every viewer (title, TPS, players, reset, IP) are built once per
+ * tick into a {@link Shared} and reused, so only the genuinely per-player lines are rebuilt.
  */
 final class ScoreboardLines {
 
@@ -28,32 +30,15 @@ final class ScoreboardLines {
 
     static final int LINE_COUNT = 12;
 
+    record Shared(Component title, Component resetLine, Component tpsLine, Component playersLine, Component ipLine) {
+    }
+
     static Component title() {
         return Messages.msg("scoreboard.title", "<b><primary>{server}</b>", "server", Messages.brandName());
     }
 
-    static List<Component> build(Player player) {
-        PlayerStats stats = StatsManager.getStats(player.getUniqueId());
-        int kills = stats != null ? stats.getKills() : 0;
-        int deaths = stats != null ? stats.getDeaths() : 0;
-        int fishes = stats != null ? stats.getFishCaught() : 0;
-
-        ZoneId zone = TimezoneManager.get(player); // player's own timezone
-        ZonedDateTime now = ZonedDateTime.now(zone);
-
-        // American zones: month/day/year date + 12-hour clock. Everyone else (European style):
-        // day/month/year date + 24-hour clock.
-        boolean american = zone.getId().startsWith("America/");
-        String datePattern = american
-                ? Messages.get("scoreboard.date-format-us", "MM/dd/yyyy")
-                : Messages.get("scoreboard.date-format-eu", "dd/MM/yyyy");
-        String timePattern = american
-                ? Messages.get("scoreboard.time-format-12h", "h:mm:ss a")
-                : Messages.get("scoreboard.time-format-24h", "HH:mm:ss");
-
-        String date = now.format(formatter(datePattern, "dd/MM/yyyy"));
-        String time = now.format(formatter(timePattern, "HH:mm:ss"));
-
+    /** The viewer-independent parts of the board - build once per tick, not per player. */
+    static Shared shared() {
         String tps = formatTps(Bukkit.getTPS()[0]);
         String players = String.valueOf(Bukkit.getOnlinePlayers().size());
 
@@ -64,6 +49,26 @@ final class ScoreboardLines {
 
         String ip = Messages.get("scoreboard.ip", "2tenty.MineHut.gg");
 
+        return new Shared(
+                title(),
+                Messages.msg("scoreboard.line-reset", "<muted>Map reset <white>{reset}", "reset", reset),
+                Messages.msg("scoreboard.line-tps", "<muted>TPS <white>{tps}", "tps", tps),
+                Messages.msg("scoreboard.line-players", "<muted>Players <white>{players}", "players", players),
+                Messages.msg("scoreboard.line-ip", "<#2881C6>{ip}", "ip", ip));
+    }
+
+    static List<Component> build(Player player, Shared shared) {
+        PlayerStats stats = StatsManager.getStats(player.getUniqueId());
+        int kills = stats != null ? stats.getKills() : 0;
+        int deaths = stats != null ? stats.getDeaths() : 0;
+        int fishes = stats != null ? stats.getFishCaught() : 0;
+
+        // The player's own zone, daylight-savings choice, seconds toggle and US/EU layout - all
+        // of it lives behind /timezone, so the board just renders whatever they picked
+        TimezonePreferences timeSettings = TimezoneManager.get(player);
+        String date = TimeDisplay.date(timeSettings);
+        String time = TimeDisplay.time(timeSettings);
+
         List<Component> lines = new ArrayList<>(LINE_COUNT);
         lines.add(Messages.msg("scoreboard.line-date", "<muted>Date <white>{date}", "date", date));
         lines.add(Messages.msg("scoreboard.line-time", "<muted>Time <white>{time}", "time", time));
@@ -71,22 +76,13 @@ final class ScoreboardLines {
         lines.add(Messages.msg("scoreboard.line-kills", "<muted>Kills <white>{kills}", "kills", String.valueOf(kills)));
         lines.add(Messages.msg("scoreboard.line-deaths", "<muted>Deaths <white>{deaths}", "deaths", String.valueOf(deaths)));
         lines.add(Messages.msg("scoreboard.line-fishes", "<muted>Fishes <white>{fishes}", "fishes", String.valueOf(fishes)));
-        lines.add(Messages.msg("scoreboard.line-reset", "<muted>Map reset <white>{reset}", "reset", reset));
+        lines.add(shared.resetLine());
         lines.add(Component.empty());
-        lines.add(Messages.msg("scoreboard.line-tps", "<muted>TPS <white>{tps}", "tps", tps));
-        lines.add(Messages.msg("scoreboard.line-players", "<muted>Players <white>{players}", "players", players));
+        lines.add(shared.tpsLine());
+        lines.add(shared.playersLine());
         lines.add(Component.empty());
-        lines.add(Messages.msg("scoreboard.line-ip", "<#2881C6>{ip}", "ip", ip));
+        lines.add(shared.ipLine());
         return lines;
-    }
-
-    // Bad patterns from a config typo fall back to the default instead of breaking the board
-    private static DateTimeFormatter formatter(String pattern, String fallback) {
-        try {
-            return DateTimeFormatter.ofPattern(pattern, Locale.US);
-        } catch (IllegalArgumentException e) {
-            return DateTimeFormatter.ofPattern(fallback, Locale.US);
-        }
     }
 
     private static String formatTps(double tpsValue) {
