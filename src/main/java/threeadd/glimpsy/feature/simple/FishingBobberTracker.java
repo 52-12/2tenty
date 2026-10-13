@@ -34,8 +34,7 @@ public class FishingBobberTracker implements Listener {
         switch (event.getState()) {
             case FISHING -> hooks.put(id, event.getHook());
             case CAUGHT_ENTITY -> {
-                if (event.getCaught() instanceof Player caught)
-                    FishingSounds.markHooked(caught, event.getHook().getLocation());
+                if (event.getCaught() instanceof Player caught) FishingSounds.markHooked(caught);
             }
             case CAUGHT_FISH, REEL_IN, FAILED_ATTEMPT -> hooks.remove(id);
             default -> {

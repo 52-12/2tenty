@@ -62,11 +62,10 @@ public class FishingSoundFilter extends PacketListenerAbstract {
                 return;
             }
 
-            // The pull/reel is only wanted at the spot YOU were just hooked - not the fisher's next
-            // cast somewhere else.
+            // The pull/reel is only wanted when YOU were just hooked (short window) - not the
+            // fisher's later casts elsewhere.
             if (key.equals(RETRIEVE_KEY)) {
-                Location hooked = FishingSounds.getHookedLocation(uuid);
-                if (hooked == null || !isNear(hooked, position)) event.setCancelled(true);
+                if (!FishingSounds.wasRecentlyHooked(uuid)) event.setCancelled(true);
                 return;
             }
 
@@ -92,7 +91,7 @@ public class FishingSoundFilter extends PacketListenerAbstract {
         String key = wrapper.getSound().getSoundId().toString();
 
         if (key.equals(RETRIEVE_KEY)) {
-            if (FishingSounds.getHookedLocation(uuid) == null) event.setCancelled(true);
+            if (!FishingSounds.wasRecentlyHooked(uuid)) event.setCancelled(true);
             return;
         }
 
