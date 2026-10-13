@@ -79,6 +79,10 @@ public class MapSetter {
         CuboidRegion region = new CuboidRegion(min, max);
         ResetJob job = new ResetJob(bukkitWorld, world, requestedThreads, start);
 
+        // Get everyone off the map before we start deleting it - the wipe removes the ground under
+        // them as it goes, so teleporting at the end dropped players into the void first (#23).
+        beginReset(bukkitWorld);
+
         Bukkit.getAsyncScheduler().runNow(Glimpsy.getInstance(), task -> {
             job.units.addAll(splitIntoUnits(region, sessionBlockLimit()));
             job.unitCount = job.units.size();
@@ -173,7 +177,10 @@ public class MapSetter {
         double seconds = (double) (end - job.start) / 1000;
 
         log.info("Reset the map in ({} blocks affected, {} units) {}s", job.totalBlocks, job.unitCount, seconds);
-        finishReset(job.bukkitWorld);
+
+        // Players were already sent to spawn when the reset began (see beginReset); this only
+        // records the reset so players who were offline rejoin into the new world safely.
+        MapResetManager.recordReset();
         RESETTING.set(false);
     }
 
@@ -280,8 +287,10 @@ public class MapSetter {
         return Math.max(1, ConfigManager.getInt("map-reset.batch-delay-ticks", 5));
     }
 
-    private static void finishReset(org.bukkit.World bukkitWorld) {
-        MapResetManager.recordReset(); // so offline players get redirected to spawn on rejoin, not their old (now-void) position
+    // Announces the reset and moves everyone to spawn up front, so nobody is standing on ground
+    // that's about to be deleted underneath them.
+    private static void beginReset(org.bukkit.World bukkitWorld) {
+        Location spawnLocation = WorldSpawnManager.getCustomSpawn().orElse(bukkitWorld.getSpawnLocation());
 
         Component alertSymbol = Component.text('⚠')
                 .color(TextColor.color(0xD93B3B));
@@ -290,7 +299,7 @@ public class MapSetter {
                 Component.newline()
                         .append(alertSymbol)
                         .appendSpace()
-                        .append(ComponentParser.parseRichString("The map has been reset"))
+                        .append(ComponentParser.parseRichString("The map is resetting"))
                         .appendSpace()
                         .append(alertSymbol)
                         .appendNewline()
@@ -298,21 +307,17 @@ public class MapSetter {
                         .appendNewline()
         );
 
-        Location spawnLocation = WorldSpawnManager.getCustomSpawn().orElse(bukkitWorld.getSpawnLocation());
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            player.teleportAsync(spawnLocation).thenAccept(success -> {
+                if (!success) throw new IllegalStateException("Teleport failed");
 
-        ScheduleUtil.scheduleSync(() -> {
-            for (Player player : Bukkit.getOnlinePlayers()) {
-                player.teleportAsync(spawnLocation).thenAccept(success -> {
-                    if (!success) throw new IllegalStateException("Teleport failed");
+                player.setFoodLevel(10);
 
-                    player.setFoodLevel(10);
+                player.stopSound(SoundStop.all()); // using adventure instead of Bukkit
 
-                    player.stopSound(SoundStop.all()); // using adventure instead of Bukkit
-
-                    player.showElderGuardian(true);
-                });
-            }
-        });
+                player.showElderGuardian(true);
+            });
+        }
     }
 
     /** Mutable state for one in-flight reset, shared across the async wave callbacks. */

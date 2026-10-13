@@ -278,10 +278,13 @@ public class MapResetManager extends ListeningManager {
             ScheduleUtil.scheduleSync(() -> player.getInventory().clear());
         }
 
-        // Offline through a (world) reset -> their saved position is now void, send them to spawn
+        // Offline through a (world) reset -> their saved position is now void, send them to spawn.
+        // Same elder guardian effect they'd have seen in the moment, but with no chat line.
         if (lastResetMillis != 0 && lastSeen < lastResetMillis) {
             Location spawnLocation = WorldSpawnManager.getCustomSpawn().orElse(player.getWorld().getSpawnLocation());
-            ScheduleUtil.scheduleSync(() -> player.teleportAsync(spawnLocation));
+            ScheduleUtil.scheduleSync(() -> player.teleportAsync(spawnLocation).thenAccept(success -> {
+                if (success) player.showElderGuardian(true);
+            }));
         }
     }
 }
