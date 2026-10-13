@@ -9,12 +9,8 @@ import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSo
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Silences other players' fishing sounds for anyone who opted out with /togglefishingsounds. Those
@@ -25,8 +21,6 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class FishingSoundFilter extends PacketListenerAbstract {
 
-    private static final Logger log = LoggerFactory.getLogger(FishingSoundFilter.class);
-
     private static final String FISHING_BOBBER_PREFIX = "minecraft:entity.fishing_bobber";
     private static final String THROW_KEY = "minecraft:entity.fishing_bobber.throw";
     private static final String RETRIEVE_KEY = "minecraft:entity.fishing_bobber.retrieve";
@@ -35,27 +29,6 @@ public class FishingSoundFilter extends PacketListenerAbstract {
 
     private static final double OWN_SOUND_RADIUS_SQUARED = 1.0; // 1 block - bobber sounds are at the bobber
 
-    // --- TEMPORARY XP DIAGNOSTIC (remove once confirmed) -------------------------------------
-    // Logs every distinct sound key once, and cancels any XP/orb sound for everyone.
-    private static final Set<String> loggedKeys = ConcurrentHashMap.newKeySet();
-
-    private static boolean isXpTestSound(String key) {
-        String lower = key.toLowerCase();
-        return lower.contains("experience") || lower.contains("orb") || lower.contains("levelup")
-                || lower.contains("level_up");
-    }
-
-    private static void diagnose(String key, PacketSendEvent event) {
-        if (loggedKeys.size() < 2000 && loggedKeys.add(key))
-            log.info("[fishing-sound] sound key seen: {}", key);
-
-        if (isXpTestSound(key)) {
-            log.info("[fishing-sound] CANCELLING xp sound: {}", key);
-            event.setCancelled(true);
-        }
-    }
-    // --- end temporary -----------------------------------------------------------------------
-
     @Override
     public void onPacketSend(PacketSendEvent event) {
         boolean positional = event.getPacketType() == PacketType.Play.Server.SOUND_EFFECT;
@@ -63,11 +36,6 @@ public class FishingSoundFilter extends PacketListenerAbstract {
         if (!positional && !entitySound) return;
 
         if (entitySound) {
-            WrapperPlayServerEntitySoundEffect wrapper = new WrapperPlayServerEntitySoundEffect(event);
-            String key = wrapper.getSound().getSoundId().toString();
-            diagnose(key, event);
-            if (event.isCancelled()) return;
-
             UUID id = event.getUser().getUUID();
             if (id == null || !FishingSounds.isMuted(id)) return;
 
@@ -76,6 +44,9 @@ public class FishingSoundFilter extends PacketListenerAbstract {
                 event.setCancelled(true);
                 return;
             }
+
+            WrapperPlayServerEntitySoundEffect wrapper = new WrapperPlayServerEntitySoundEffect(event);
+            String key = wrapper.getSound().getSoundId().toString();
 
             if (key.equals(RETRIEVE_KEY)) {
                 if (!FishingSounds.wasRecentlyHooked(id)) event.setCancelled(true);
@@ -90,11 +61,6 @@ public class FishingSoundFilter extends PacketListenerAbstract {
             return;
         }
 
-        WrapperPlayServerSoundEffect wrapper = new WrapperPlayServerSoundEffect(event);
-        String key = wrapper.getSound().getSoundId().toString();
-        diagnose(key, event);
-        if (event.isCancelled()) return;
-
         UUID uuid = event.getUser().getUUID();
         if (uuid == null || !FishingSounds.isMuted(uuid)) return;
 
@@ -104,6 +70,8 @@ public class FishingSoundFilter extends PacketListenerAbstract {
             return;
         }
 
+        WrapperPlayServerSoundEffect wrapper = new WrapperPlayServerSoundEffect(event);
+        String key = wrapper.getSound().getSoundId().toString();
         Vector3d position = wrapper.getPosition();
 
         // Muted players don't hear reels, except the one that hooks THEM (see markHooked).
