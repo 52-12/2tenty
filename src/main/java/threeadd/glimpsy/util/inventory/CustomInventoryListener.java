@@ -27,8 +27,12 @@ public class CustomInventoryListener implements Listener {
         // reports the bottom inventory as clicked, even though the item lands in the top
         // GUI. Relying on the per-slot cancellation below would miss these entirely, letting
         // real items get shifted into the fake GUI's genuinely-empty slots (e.g. blank
-        // recipe-grid positions) and lost once the GUI is discarded.
+        // recipe-grid positions) and lost once the GUI is discarded. Only applies when the
+        // click originated in the bottom inventory though - a shift-click on an item that's
+        // already inside the GUI (e.g. approving an article request) must still fall through
+        // to the per-slot handling below instead of being silently swallowed here.
         if (event.getView().getTopInventory().getHolder() instanceof CustomInventory
+                && event.getClickedInventory() != event.getView().getTopInventory()
                 && (event.getAction() == InventoryAction.COLLECT_TO_CURSOR
                 || event.getAction() == InventoryAction.MOVE_TO_OTHER_INVENTORY)) {
             event.setCancelled(true);

@@ -1,6 +1,6 @@
 package threeadd.glimpsy.feature.antifilter;
 
-import org.bukkit.Material;
+import org.bukkit.inventory.ItemStack;
 import threeadd.glimpsy.Glimpsy;
 import threeadd.glimpsy.util.persistence.Repository;
 
@@ -8,17 +8,17 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.StringJoiner;
 import java.util.UUID;
 
 /**
- * Persists each player's protected material sets (a comma-separated list of material names per
- * filter type). The GUI only ever holds display copies, so there are no item stacks to store.
+ * Persists each player's protected item samples per filter type. Storing the whole item (not just
+ * its material) is what lets enchanted items be matched specifically - see AntiFilterManager.
  */
 public class AntiFilterRepository extends Repository<Void> {
 
@@ -31,17 +31,26 @@ public class AntiFilterRepository extends Repository<Void> {
     @Override
     protected void createTable(Connection conn) throws SQLException {
         try (Statement stmt = conn.createStatement()) {
-            // 'contents' predates this feature's rework - it now holds a material-name CSV
             stmt.execute("CREATE TABLE IF NOT EXISTS anti_filters (" +
                     "player_id VARCHAR(36) NOT NULL," +
                     "filter_type VARCHAR(16) NOT NULL," +
-                    "contents TEXT," +
+                    "contents BLOB," +
                     "PRIMARY KEY (player_id, filter_type))");
         }
     }
 
-    public Map<UUID, Map<AntiFilterType, Set<Material>>> loadAllSync() {
-        Map<UUID, Map<AntiFilterType, Set<Material>>> result = new HashMap<>();
+    private static List<ItemStack> deserialize(byte[] bytes) {
+        if (bytes == null || bytes.length == 0) return new ArrayList<>();
+        try {
+            return new ArrayList<>(Arrays.asList(ItemStack.deserializeItemsFromBytes(bytes)));
+        } catch (Exception e) {
+            // Data from an older format of this feature - start that filter fresh rather than crash
+            return new ArrayList<>();
+        }
+    }
+
+    public Map<UUID, Map<AntiFilterType, List<ItemStack>>> loadAllSync() {
+        Map<UUID, Map<AntiFilterType, List<ItemStack>>> result = new HashMap<>();
 
         try (Connection conn = Glimpsy.getDataBase().getConnection();
              Statement stmt = conn.createStatement();
@@ -55,16 +64,8 @@ public class AntiFilterRepository extends Repository<Void> {
                     continue;
                 }
 
-                Set<Material> materials = new HashSet<>();
-                String csv = rs.getString("contents");
-                if (csv != null && !csv.isBlank()) {
-                    for (String name : csv.split(",")) {
-                        Material material = Material.matchMaterial(name.trim());
-                        if (material != null) materials.add(material);
-                    }
-                }
-
-                result.computeIfAbsent(id, x -> new EnumMap<>(AntiFilterType.class)).put(type, materials);
+                result.computeIfAbsent(id, x -> new EnumMap<>(AntiFilterType.class))
+                        .put(type, deserialize(rs.getBytes("contents")));
             }
         } catch (SQLException e) {
             throw new RuntimeException("Failed to load anti filters", e);
@@ -73,12 +74,9 @@ public class AntiFilterRepository extends Repository<Void> {
         return result;
     }
 
-    public void runAsyncSave(UUID playerId, AntiFilterType type, Set<Material> materials) {
-        StringJoiner joiner = new StringJoiner(",");
-        for (Material material : materials) joiner.add(material.name());
-        String csv = joiner.toString();
-
+    public void runAsyncSave(UUID playerId, AntiFilterType type, List<ItemStack> samples) {
+        byte[] bytes = ItemStack.serializeItemsAsBytes(samples.toArray(new ItemStack[0]));
         runAsync(() -> executeUpdate("REPLACE INTO anti_filters (player_id, filter_type, contents) VALUES (?, ?, ?)",
-                playerId.toString(), type.name(), csv));
+                playerId.toString(), type.name(), bytes));
     }
 }

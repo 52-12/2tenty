@@ -8,6 +8,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
+import threeadd.glimpsy.feature.achievement.Achievement;
+import threeadd.glimpsy.feature.achievement.AchievementManager;
 
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -38,7 +40,10 @@ public class DirtMossListener implements Listener {
 
         switch (block.getType()) {
             case DIRT -> block.setType(Material.MOSS_BLOCK);
-            case ROOTED_DIRT -> block.setType(Material.GRASS_BLOCK);
+            case ROOTED_DIRT -> {
+                block.setType(Material.GRASS_BLOCK);
+                AchievementManager.award(player, Achievement.A_NEW_WORLD);
+            }
             case DEAD_BUSH -> block.setType(TREE_SAPLING_TYPES[ThreadLocalRandom.current().nextInt(TREE_SAPLING_TYPES.length)]);
             default -> {
                 return;

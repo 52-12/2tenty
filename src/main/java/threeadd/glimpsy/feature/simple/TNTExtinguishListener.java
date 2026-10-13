@@ -11,6 +11,8 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
+import threeadd.glimpsy.feature.achievement.Achievement;
+import threeadd.glimpsy.feature.achievement.AchievementManager;
 
 // Right-clicking a primed TNT entity with a water bucket defuses it - not a vanilla interaction,
 // water only ever puts out fire in vanilla, but with TNT's blast radius bumped up a lot this
@@ -34,6 +36,8 @@ public class TNTExtinguishListener implements Listener {
         tnt.getWorld().spawnParticle(Particle.CLOUD, tnt.getLocation(), 15, 0.3, 0.3, 0.3, 0.02);
         tnt.getWorld().playSound(tnt.getLocation(), Sound.ENTITY_GENERIC_EXTINGUISH_FIRE, 1f, 1f);
         tnt.remove();
+
+        AchievementManager.award(player, Achievement.COUNTER_TERRORISTS_WIN);
 
         if (player.getGameMode() == GameMode.CREATIVE) return;
 

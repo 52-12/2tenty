@@ -8,6 +8,7 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
+import java.util.Comparator;
 import threeadd.glimpsy.feature.help.HelpListInventory;
 import threeadd.glimpsy.util.command.CustomCommand;
 import threeadd.glimpsy.util.command.CustomCommandRegistry;
@@ -19,6 +20,7 @@ public class CommandListInventory extends SubHelpListInventory<CustomCommand> {
     public CommandListInventory(Player viewer) {
         super(Component.text("Custom Commands"), CustomCommandRegistry.INSTANCE.getRegisteredItems().stream()
                 .filter(command -> command.isVisibleTo(viewer))
+                .sorted(Comparator.comparing(command -> command.create().getLiteral())) // alphabetical
                 .toList(), viewer);
 
         setTransferSlot(Rows.SIX.getTotalSlots() - 9,

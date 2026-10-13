@@ -68,8 +68,8 @@ public class Messages {
      * component, so coloring the parsed component's root doesn't take - strip to plain text
      * and rebuild instead (same approach as RecipeInfoInventory's title).
      */
-    public static Component blackTitle(String key, String def) {
-        String plain = PlainTextComponentSerializer.plainText().serialize(msg(key, def));
+    public static Component blackTitle(String key, String def, String... placeholders) {
+        String plain = PlainTextComponentSerializer.plainText().serialize(msg(key, def, placeholders));
         return Component.text(plain, NamedTextColor.BLACK);
     }
 

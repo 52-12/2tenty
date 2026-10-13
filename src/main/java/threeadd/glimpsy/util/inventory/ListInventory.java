@@ -106,4 +106,16 @@ public abstract class ListInventory<T> extends CustomInventory {
             updateInventory();
         }
     }
+
+    public int getPage() {
+        return page;
+    }
+
+    /** Clamped to the valid page range, so a stale index (e.g. after items shrink) just lands on the last page. */
+    public void setPage(int newPage) {
+        int itemsPerPage = Math.max(1, pagedSlots.size());
+        int maxPage = Math.max(0, (items.size() - 1) / itemsPerPage);
+        page = Math.max(0, Math.min(newPage, maxPage));
+        updateInventory();
+    }
 }

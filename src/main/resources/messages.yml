@@ -28,10 +28,14 @@ misc:
 
 chat:
   # Typed in chat, these tokens are replaced with the sender's own live stat, e.g. [kills] -> "Kills: 12"
-  placeholder-kills: "<#FFE08F>Kills: {value}"
-  placeholder-deaths: "<#FFE08F>Deaths: {value}"
-  placeholder-fishes: "<#FFE08F>Fishes: {value}"
-  placeholder-playtime: "<#FFE08F>Playtime: {value}"
+  placeholder-kills: "<#FFE08F>[Kills : {value}]"
+  placeholder-deaths: "<#FFE08F>[Deaths : {value}]"
+  placeholder-fishes: "<#FFE08F>[Fishes : {value}]"
+  placeholder-playtime: "<#FFE08F>[Playtime : {value}]"
+
+chat-dropoff:
+  set: "<success>You'll now only see chat from within {distance} blocks"
+  disabled: "<success>Chat range limit removed - you'll see all chat again"
 
 tab:
   header-title: "<b><title>2TENTY</b>"
@@ -170,6 +174,43 @@ bridge-egg:
   limit-one: "<error>You can only carry one Bridge Egg at a time"
   limit-many: "<error>You can only carry {limit} Bridge Eggs at a time"
 
+achievements:
+  title: "Achievements ({earned}/{total})"
+  # Both of these get the achievement's description attached as a hover, so keep them one line
+  unlocked: "<primary>Achievement unlocked: <white>{title}"
+  broadcast: "<muted>{player} earned the achievement <white>{title}"
+  lore-unlocked: "<success>Unlocked"
+  lore-locked: "<muted>Not earned yet"
+  a-new-world:
+    title: "A New World"
+    description: "Bonemeal rooted dirt to grass block"
+  counter-terrorists-win:
+    title: "Counter-Terrorists Win"
+    description: "Extinquish TNT using a water bucket"
+  oh-hello-there:
+    title: "Oh... Hello there..."
+    description: "Fish up a random player"
+  ender-express:
+    title: "EnderExpress™"
+    description: "Make your first trade on the trade chest"
+  wind-master:
+    title: "Wind Master"
+    description: "Fish in the wind for a extra Lure Level"
+  mind-the-gap:
+    title: "Mind the Gap"
+    description: "Throw a Bridge Egg"
+
+head-collection:
+  title: "{player}'s Head Collection"
+  only-heads: "<error>Only heads can go in your head collection"
+  empty: "<error>Your head collection is empty - open it with /headcollections"
+  disabled: "<error>Head collections are disabled"
+
+head-drop:
+  item-name: "{player}'s Head"
+  dropped: "<primary>{victim} dropped their head!"
+  dropped-by: "<primary>{killer} knocked {victim}'s head clean off!"
+
 anvil:
   cost-notice: "This anvil upgrade costs you: <#F8DD97>{cost} Levels"
 
@@ -178,10 +219,13 @@ scoreboard:
   ip: "2tenty.MineHut.gg"
   # Chosen automatically from the player's /timezone: America/* zones get US date + 12h clock,
   # everyone else gets European date + 24h clock
-  date-format-eu: "dd/MM/yyyy"
+  date-format-eu: "dd.MM.yyyy"
   date-format-us: "MM/dd/yyyy"
   time-format-24h: "HH:mm:ss"
   time-format-12h: "h:mm:ss a"
+  # Used instead of the two above for players who turned seconds off with /timezone seconds
+  time-format-24h-short: "HH:mm"
+  time-format-12h-short: "h:mm a"
   line-date: "<muted>Date <white>{date}"
   line-time: "<muted>Time <white>{time}"
   line-kills: "<muted>Kills <white>{kills}"
@@ -213,10 +257,28 @@ full-reset:
   done: "<success>Full reset started - the world and every player's inventory were wiped"
 
 timezone:
-  current: "<primary>Your timezone is <white>{zone}"
-  set: "<success>Your timezone is now <white>{zone}"
-  reset: "<success>Your timezone was reset to the server default (<white>{zone}<success>)"
+  # The zone is named here and nowhere else - every other line below deliberately avoids
+  # repeating it, so one /timezone command never says "Eastern Time" three times over
+  current: "<primary>Your timezone is <white>{zone}<muted> - now <white>{time}<muted> on <white>{date}"
+  # Only shown for a bare /timezone and the dst/seconds/us/eu subcommands - setting a zone
+  # doesn't touch any of these, so listing them there is just noise
+  current-options: "<muted>Daylight savings <white>{dst}<muted>, seconds <white>{seconds}<muted>, format <white>{format}"
+  reset: "<success>Your clock settings were reset to the server default (<white>{zone}<success>)"
   invalid: "<error>Unknown timezone '{input}' - type a UTC offset like +0500 or -0800, or an abbreviation like EST, PST, GMT, CET, JST"
+  no-dst: "<muted>That zone doesn't observe daylight savings, so the setting won't change anything"
+  dst-on: "<success>Daylight savings is now followed - your clock shifts with the season"
+  dst-off: "<success>Daylight savings is now ignored - your clock stays on standard time all year"
+  seconds-on: "<success>Your clock now shows seconds"
+  seconds-off: "<success>Your clock no longer shows seconds"
+  format-set: "<success>Your date and time now use the <white>{format}<success> format"
+  format-us: "US (month/day/year, 12-hour)"
+  format-eu: "EU (day/month/year, 24-hour)"
+  format-us-short: "US"
+  format-eu-short: "EU"
+  format-auto: "automatic ({resolved})"
+  # Not named on/off - YAML reads those bare keys as booleans, not strings
+  state-on: "on"
+  state-off: "off"
 
 antifilter:
   drop-title: "Anti-Drop"
@@ -227,15 +289,40 @@ antifilter:
 playtime:
   value: "<primary>{player}<muted>'s playtime: <white>{playtime}"
 
+bed-spawn:
+  none: "<error>You don't have a bed spawn set"
+  cleared: "<success>Bed spawn cleared - you'll respawn at world spawn now. The bed at {x}, {y}, {z} is untouched"
+
+articles:
+  review-hint: "<green>Left-click<muted> read  <green>Shift-Left<muted> approve  <red>Right<muted> decline"
+  reorder-hint: "<green>Shift-Left<muted> move up  <green>Shift-Right<muted> move down"
+  approved: '<success>Approved "{title}" by {author}'
+  declined: '<error>Declined "{title}" by {author}'
+  your-approved: '<success>Your article "{title}" was approved and is now live in /help'
+  your-declined: '<error>Your article "{title}" was declined'
+  disabled: "<error>Player articles are disabled"
+  need-book: "<error>Write your article in a book & quill and hold it, then run this again"
+  already-pending: "<error>You already have a request awaiting review - /article cancel to withdraw it"
+  submitted: '<success>Article "{title}" submitted for review'
+  not-yours: "<error>You have no article with that title"
+  edit-book-given: "<primary>Write your changes in the book you were just given - saving it submits the edit automatically"
+  edited: "<success>Article updated and sent back for review"
+  deleted: "<success>Article deleted"
+  no-pending: "<error>You have no pending request"
+  request-cancelled: "<success>Your pending request was withdrawn"
+  none: "<muted>You haven't written any articles yet"
+  list-header: "<primary>Your articles:"
+  new-request: "<primary>{author} submitted an article for review - /article requests"
+
 trade-chest:
   chest-title: "Trade Chest"
   preview-title: "Trade Preview"
   target-list-title: "Send Trade Offer To..."
   target-lore: "Click to send a trade offer to {player}'s Trade Chest"
   placed: "<success>Trade Chest placed - right click it to load items and send trade offers"
-  already-placed: "<error>You already have a Trade Chest placed - break it first"
+  already-placed: "<error>You already have a Trade Chest placed at {x}, {y}, {z} - break it first"
+  previous-gone: "<muted>Your previous Trade Chest no longer exists - placing a new one"
   not-yours: "<error>This is {player}'s Trade Chest"
-  broken-by-other: "<error>{player} broke your Trade Chest"
   no-targets: "<error>No other players have a Trade Chest placed right now"
   button-send: "<primary>Send a trade offer"
   button-send-lore: "Pick another player's Trade Chest to offer your items to"
@@ -251,7 +338,7 @@ trade-chest:
   deny-pane: "<red>{player} - Deny"
   offer-sent: "<success>Trade offer sent to {player}'s Trade Chest"
   offer-received: "<primary>{player} sent a trade offer to your Trade Chest - open it to accept or deny"
-  offer-accepted: "<success>{player} accepted your trade offer - open your Trade Chest to review the trade"
+  offer-accepted: "<success>{player} accepted your trade offer - review the trade in your Trade Chest"
   already-trading: "<error>This Trade Chest is already in an active trade - finish or cancel it first"
   target-busy: "<error>{player} is already in an active trade"
   accepts-reset: "<error>Trade contents changed - all accepts were reset, review the trade again"
