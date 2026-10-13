@@ -1,9 +1,12 @@
 package threeadd.glimpsy.feature.map;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.scheduler.BukkitTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,6 +18,9 @@ import threeadd.glimpsy.util.manager.ListeningManager;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class MapResetManager extends ListeningManager {
 
@@ -27,6 +33,12 @@ public class MapResetManager extends ListeningManager {
     // 0 = no full reset has ever been recorded - never clears anyone's inventory in that case.
     private static long fullResetMillis = 0;
 
+    // When each player was last online, captured ourselves (on quit, and seeded from Bukkit's
+    // player data at startup). We can't use Player#getLastSeen() at join time, because for an
+    // online player - which they are during PlayerJoinEvent - it returns the CURRENT time, so it
+    // could never tell whether they'd been offline through the reset.
+    private static final Map<UUID, Long> lastSeenMillis = new ConcurrentHashMap<>();
+
     // The pending auto-reset task, so it can be cancelled on pause. Null when unscheduled.
     private static BukkitTask scheduledTask;
     private static boolean paused = false;
@@ -37,12 +49,25 @@ public class MapResetManager extends ListeningManager {
         return ConfigManager.getBoolean("map-reset.enabled", true);
     }
 
+    // true: a countdown that ran out while the server was offline is honoured on startup.
+    private static boolean resetIfOverdue() {
+        return ConfigManager.getBoolean("map-reset.reset-if-overdue-on-start", true);
+    }
+
+    // MapSetter references FastAsyncWorldEdit classes directly, so it must only be touched when
+    // FAWE is actually on the classpath and enabled.
+    private static boolean faweAvailable() {
+        return Bukkit.getPluginManager().isPluginEnabled("FastAsyncWorldEdit");
+    }
+
     private static void schedule() {
         cancelScheduled();
         if (!autoResetEnabled() || paused) return;
 
         scheduledTask = ScheduleUtil.scheduleSync(() -> {
-                    MapSetter.reset(Integer.MAX_VALUE);
+                    if (faweAvailable()) MapSetter.reset(Integer.MAX_VALUE);
+                    else log.error("Cannot reset map: FastAsyncWorldEdit isn't installed/enabled");
+
                     // Roll the target forward a full interval and persist it, so a restart before
                     // the next reset doesn't lose the schedule.
                     MapResetManager.time = new MapResetTime();
@@ -196,14 +221,28 @@ public class MapResetManager extends ListeningManager {
                 .map(dt -> dt.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli())
                 .orElse(0L);
 
+        // Seed last-seen from Bukkit's own data - for an OFFLINE player getLastSeen() is their
+        // real last-seen, so this works even for players who quit before this feature existed.
+        // From here on it's kept current by onQuit.
+        for (OfflinePlayer offlinePlayer : Bukkit.getOfflinePlayers())
+            lastSeenMillis.put(offlinePlayer.getUniqueId(), offlinePlayer.getLastSeen());
+
         MapResetRepository.getInstance().loadResetPausedSync().ifPresent(state -> {
             paused = state.paused();
             pausedRemainingSeconds = state.remainingSeconds();
         });
 
-        // If the countdown finished while the server was offline, start a fresh interval instead
-        // of wiping the moment the server boots (which nobody would be online to see anyway).
+        // If the countdown finished while the server was offline, the missed reset is honoured now
+        // (a delayed task can't fire while the process is down, so it's caught here instead) unless
+        // that's been turned off - in which case a fresh interval starts, as it did before.
         if (!paused && time.getTime().isBefore(LocalDateTime.now())) {
+            if (resetIfOverdue()) {
+                log.info("Map reset timer expired while the server was offline - resetting now");
+
+                if (faweAvailable()) MapSetter.reset(Integer.MAX_VALUE);
+                else log.error("Cannot reset overdue map: FastAsyncWorldEdit isn't installed/enabled");
+            }
+
             time = new MapResetTime();
             MapResetRepository.getInstance().saveSync(time);
         }
@@ -219,16 +258,20 @@ public class MapResetManager extends ListeningManager {
         MapResetRepository.getInstance().saveSync(time);
     }
 
+    @EventHandler
+    public void onQuit(PlayerQuitEvent event) {
+        lastSeenMillis.put(event.getPlayer().getUniqueId(), System.currentTimeMillis());
+    }
+
     // A player who was offline during the last reset has a saved position from before the world
-    // got wiped - their last-seen time (still reflecting the PREVIOUS session, since it isn't
-    // updated again until they quit) predates the reset, so redirect them to spawn instead of
-    // letting them fall into what's now just void air.
+    // got wiped, so redirect them to spawn on rejoin instead of letting them fall into what's now
+    // just void air. lastSeenMillis holds their last-online time from BEFORE this join.
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-        if (!player.hasPlayedBefore()) return; // brand new players already join fresh at spawn
 
-        long lastSeen = player.getLastSeen(); // still reflects the PREVIOUS session at join time
+        Long lastSeen = lastSeenMillis.get(player.getUniqueId());
+        if (lastSeen == null) return; // never tracked (a brand new player) - nothing to compare
 
         // Offline through a full reset -> their saved inventory is from before the wipe, clear it
         if (fullResetMillis != 0 && lastSeen < fullResetMillis) {

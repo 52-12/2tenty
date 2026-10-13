@@ -52,6 +52,15 @@ anvil:
     # netherite_chestplate: 10
     # enchanted_book: 3
 
+bamboo:
+  # Extra growth ticks aimed only at bamboo, on top of the world's normal randomTickSpeed
+  # gamerule (which speeds up every crop/sapling/leaf and can't target just one block type).
+  # This many random positions per loaded chunk are sampled each game tick, and only bamboo
+  # found at one grows. Note this is a whole-column sample, unlike vanilla's random ticks
+  # (3 per 16x16x16 section), so start low and raise it until growth feels right.
+  # 0 = disabled, no extra growth.
+  extra-random-ticks: 0
+
 stats:
   top-list-size: 10
 
@@ -66,6 +75,28 @@ map-reset:
   enabled: true
   # Hours between automatic resets (72 = 3 days)
   interval-hours: 72
+  # true: if the timer ran out while the server was offline, run the reset right away on startup
+  # instead of quietly starting a fresh interval - the map still gets reset even though the
+  # process was down when it was due. false = the old skip-the-missed-reset behaviour.
+  reset-if-overdue-on-start: true
+  # The reset runs in waves of these settings so it uses as much RAM as is safe without OOMing
+  # the server (issue #23). The region is split into pieces no bigger than session-block-limit,
+  # then each wave runs several pieces concurrently; how many depends on free heap.
+  # Max concurrent FAWE edit sessions. 0 = use the machine's CPU count.
+  max-threads: 0
+  # Largest region piece the map is split into - this bounds how many blocks one edit session can
+  # queue, which is what keeps any single session's memory use in check.
+  session-block-limit: 2000000
+  # Free heap (MB) the reset always leaves untouched for the rest of the server.
+  memory-reserve-mb: 256
+  # Rough heap (MB) each concurrent session is assumed to use - more free heap means more threads.
+  memory-per-thread-mb: 128
+  # If free heap drops below this, the reset pauses and waits for memory to free up.
+  min-free-mb: 128
+  # If it stays below min-free-mb for this long, the reset aborts (instead of risking an OOM).
+  abort-timeout-seconds: 300
+  # Ticks between waves - a short breather so the JVM can collect between batches.
+  batch-delay-ticks: 5
 
 anti-filter:
   # false turns off /antidrop and /antipickup (existing filters stop being enforced too)
@@ -78,6 +109,52 @@ trade-chest:
   # How long each item stack takes to arrive after a trade is accepted - deliveries land one
   # stack at a time, this many minutes apart
   delivery-interval-minutes: 5
+
+articles:
+  # Player-written /help articles (/article request|list|edit|delete|cancel|requests).
+  # false hides the command and keeps approved articles out of the /help article list -
+  # nothing is deleted, so turning it back on brings every stored article with it.
+  enabled: true
+
+achievements:
+  # false stops achievements being awarded entirely. Already-earned ones are kept and still
+  # show in /achievements.
+  enabled: true
+  # false keeps an unlock between the player who earned it and themselves
+  broadcast: true
+
+timezone:
+  # Defaults for players who haven't changed anything with /timezone. A player who sets an
+  # option and later resets it (or sets it back) follows these again.
+  # true = clocks follow daylight savings; false = standard time all year.
+  default-daylight-savings: true
+  # false hides seconds on the scoreboard clock (12:34 instead of 12:34:56).
+  default-show-seconds: true
+  # auto = American zones get month/day/year + 12-hour, everyone else day/month/year + 24-hour.
+  # us / eu force one layout for everyone regardless of zone.
+  default-format: auto
+  # Extra or replacement abbreviations for /timezone, as "IANA/Zone|Display Name" (the name is
+  # optional). Anything listed here is applied on top of the built-in list, so a key that
+  # already exists is repointed - which is how ambiguous abbreviations get settled. Out of the
+  # box CST is US Central Time; uncomment below if your players mean China instead.
+  abbreviations: {}
+  #  CST: "Asia/Shanghai|China Time"
+  #  SST: "Asia/Singapore|Singapore Time"
+  #  IST: "Europe/Dublin|Irish Time"
+
+head-collection:
+  # false disables /headcollections and the [heads] chat share. Stored collections are kept.
+  enabled: true
+
+head-drop:
+  # Chance (0-1) that a killed player drops their own head. Very rare on purpose - heads are
+  # trophies, not a resource. 0.002 is roughly 1 in 500 kills; 0 turns head drops off.
+  chance: 0.002
+  # true only drops a head when another player got the kill - mob kills, fall damage, lava and
+  # the like never produce one. false makes any player death eligible.
+  require-player-killer: true
+  # false keeps the drop silent instead of broadcasting it to the server
+  announce: true
 
 trident:
   # false strips tridents from all mob death drops (Drowned are the only vanilla source),
@@ -118,6 +195,25 @@ guardian-fishing:
   trimmed-armor-piece-drop-chance: 0.02
   elder-luck-duration-seconds: 300
   regular-luck-duration-seconds: 120
+  # Free-form drop tables for fished guardians, on top of their vanilla drops and the elder-only
+  # trim drops below. `loot` rolls for every fished guardian, `elder-loot` additionally for
+  # elders. Both take the same two formats as the pools below (plain list, or material: weight),
+  # and both are empty by default so nothing changes until you fill one in.
+  #     loot:
+  #       prismarine_crystals: 3
+  #       heart_of_the_sea: 1
+  #     loot-chance: 0.25
+  #     loot-min-amount: 1
+  #     loot-max-amount: 3
+  loot: []
+  # Chance (0-1) the pool above is rolled at all, per kill
+  loot-chance: 1.0
+  loot-min-amount: 1
+  loot-max-amount: 1
+  elder-loot: []
+  elder-loot-chance: 1.0
+  elder-loot-min-amount: 1
+  elder-loot-max-amount: 1
   damaged-armor-max-durability-fraction: 0.5
   # Elder Guardian drop pools (customisable). trim-templates: the smithing templates it can drop.
   # armor-pieces: the base armour a rare pre-trimmed piece is made from.
@@ -233,7 +329,20 @@ random-items:
     oak_planks: 4
 
 explosive-enchant:
-  blocks-per-level: 3
+  # Seconds a player must wait between their Explosive-enchanted arrows actually detonating -
+  # an arrow shot before the cooldown is up still lands normally, it just doesn't explode.
+  # 0 = no cooldown.
+  cooldown-seconds: 0
+  # Blocks destroyed per Explosive enchantment level (1-5), independently configurable per level
+  # instead of a straight multiplier - a level not listed here falls back to
+  # level * blocks-per-level-fallback.
+  blocks-per-level:
+    1: 3
+    2: 6
+    3: 9
+    4: 12
+    5: 15
+  blocks-per-level-fallback: 3
   # anvil-cost, max-level, weight, and enchant-cost aren't here - they're read during Paper's
   # plugin bootstrap phase (see ExplosiveEnchantment#createInfo), before config.yml is loaded,
   # so they stay hardcoded in code instead.
