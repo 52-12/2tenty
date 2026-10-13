@@ -1,9 +1,15 @@
 package threeadd.glimpsy.util.manager;
 
+import threeadd.glimpsy.feature.achievement.AchievementManager;
 import threeadd.glimpsy.feature.antifilter.AntiFilterManager;
 import threeadd.glimpsy.feature.competition.CompetitionManager;
+import threeadd.glimpsy.feature.help.article.ArticleOrderManager;
+import threeadd.glimpsy.feature.help.article.PlayerArticleManager;
+import threeadd.glimpsy.feature.simple.BambooGrowthManager;
+import threeadd.glimpsy.feature.simple.SaltBlockManager;
 import threeadd.glimpsy.feature.discord.DiscordManager;
 import threeadd.glimpsy.feature.discordsrv.DiscordChatMuteManager;
+import threeadd.glimpsy.feature.headcollection.HeadCollectionManager;
 import threeadd.glimpsy.feature.map.MapResetManager;
 import threeadd.glimpsy.feature.nametag.NametagManager;
 import threeadd.glimpsy.feature.nickname.NicknameManager;
@@ -40,6 +46,12 @@ public class ManagerRegistry extends Registry<Manager> {
                 new TradeChestManager(),
                 new ScoreboardManager(),
                 new TimezoneManager(),
-                new AntiFilterManager());
+                new AntiFilterManager(),
+                new PlayerArticleManager(),
+                new ArticleOrderManager(),
+                new BambooGrowthManager(),
+                new SaltBlockManager(),
+                new HeadCollectionManager(),
+                new AchievementManager());
     }
 }
