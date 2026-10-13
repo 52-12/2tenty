@@ -24,6 +24,7 @@ import org.bukkit.event.player.PlayerFishEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ArmorMeta;
 import org.bukkit.inventory.meta.Damageable;
+import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.trim.ArmorTrim;
 import org.bukkit.inventory.meta.trim.TrimMaterial;
@@ -33,6 +34,7 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import threeadd.glimpsy.Glimpsy;
 import threeadd.glimpsy.util.config.ConfigManager;
+import threeadd.glimpsy.util.enchantments.CustomEnchantmentRegistry;
 import threeadd.glimpsy.util.text.ComponentParser;
 
 import java.util.ArrayList;
@@ -59,6 +61,10 @@ public class GuardianFishingListener implements Listener {
 
     private static double trimmedArmorPieceDropChance() {
         return ConfigManager.getDouble("guardian-fishing.trimmed-armor-piece-drop-chance", 0.02); // on kill, mutually exclusive with the template drop
+    }
+
+    private static double telekinesisBookChance() {
+        return ConfigManager.getDouble("guardian-fishing.telekinesis-book-chance", 0.02); // on kill, regular or elder
     }
 
     private static int elderLuckDurationTicks() {
@@ -189,6 +195,10 @@ public class GuardianFishingListener implements Listener {
         rollLoot(event, "loot", "loot-chance", 1.0);
         if (elder) rollLoot(event, "elder-loot", "elder-loot-chance", 1.0);
 
+        // The Telekinesis enchant is a fishing-only reward, from regular or elder guardians alike.
+        if (ThreadLocalRandom.current().nextDouble() < telekinesisBookChance())
+            event.getDrops().add(createTelekinesisBook());
+
         if (elder) {
             // Mutually exclusive - a kill either yields the rare full trimmed piece, or (much
             // more often) just a template, never both.
@@ -204,8 +214,16 @@ public class GuardianFishingListener implements Listener {
         player.addPotionEffect(new PotionEffect(PotionEffectType.LUCK, durationTicks, elder ? 1 : 0));
     }
 
-    private ItemStack createRandomTrimTemplate() {
-        Material[] templates = trimTemplates();
+    private ItemStack createTelekinesisBook() {
+        ItemStack book = new ItemStack(Material.ENCHANTED_BOOK);
+        EnchantmentStorageMeta meta = (EnchantmentStorageMeta) book.getItemMeta();
+        meta.addStoredEnchant(CustomEnchantmentRegistry.INSTANCE.TELEKINESIS.toBukkitEnchantment(), 1, true);
+        book.setItemMeta(meta);
+
+        return book;
+    }
+
+    private ItemStack createRandomTrimTemplate() {        Material[] templates = trimTemplates();
         Material template = templates[ThreadLocalRandom.current().nextInt(templates.length)];
         return new ItemStack(template);
     }
