@@ -56,7 +56,7 @@ bamboo:
   # Speeds bamboo growth without touching any other crop/plant. Bamboo positions are tracked, so
   # growth is proportional to how much bamboo you actually have instead of sampling random blocks.
   # How many tracked bamboo blocks are force-grown per tick. 0 = disabled. Raise for faster growth.
-  growths-per-tick: 50
+  growths-per-tick: 5
   # How many already-loaded chunks are scanned per tick to discover pre-existing bamboo (each chunk
   # is only scanned once). Lower this if chunk-load scans ever cause a hitch.
   scan-chunks-per-tick: 2

@@ -35,6 +35,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class BambooGrowthManager extends ListeningManager {
 
+    private static final int MAX_BAMBOO_HEIGHT = 16;
+
     private final Map<World, Set<Long>> bamboo = new ConcurrentHashMap<>();
     private final Map<World, Iterator<Long>> cursors = new ConcurrentHashMap<>();
     private final Deque<Chunk> pendingScan = new ArrayDeque<>();
@@ -121,21 +123,41 @@ public class BambooGrowthManager extends ListeningManager {
             if (!world.isChunkLoaded(x >> 4, z >> 4)) continue; // keep it for when the chunk loads
 
             Block block = world.getBlockAt(x, y, z);
-            if (isBamboo(block)) {
-                block.applyBoneMeal(BlockFace.UP);
-                grown++;
-
-                // Bone meal can grow it upward - track the new block so it can grow too. Concurrent
-                // set, so adding while iterating is safe.
-                Block above = block.getRelative(BlockFace.UP);
-                if (isBamboo(above))
-                    positions.add(pack(above.getX(), above.getY(), above.getZ()));
-            } else {
+            if (!isBamboo(block)) {
                 cursor.remove(); // stale (broken/pushed) - self-heals
+                continue;
             }
+
+            Block above = block.getRelative(BlockFace.UP);
+            if (isBamboo(above)) {
+                // Middle of a column, not a growable tip - drop it so every visit counts.
+                cursor.remove();
+                continue;
+            }
+
+            // Grow the block up ourselves instead of applyBoneMeal - that spawns bone-meal
+            // particles and a sound every single time, which we don't want at this rate.
+            if (!above.getType().isAir() || columnHeight(block) >= MAX_BAMBOO_HEIGHT) continue;
+
+            above.setType(Material.BAMBOO, false);
+            grown++;
+
+            cursor.remove(); // this block is now a middle block
+            positions.add(pack(above.getX(), above.getY(), above.getZ()));
         }
 
         return grown;
+    }
+
+    // Bamboo's natural height cap (16) - grow only up to it, like vanilla.
+    private int columnHeight(Block block) {
+        int height = 1;
+        Block below = block.getRelative(BlockFace.DOWN);
+        while (height < MAX_BAMBOO_HEIGHT && isBamboo(below)) {
+            height++;
+            below = below.getRelative(BlockFace.DOWN);
+        }
+        return height;
     }
 
     private void scanChunk(Chunk chunk) {
@@ -151,8 +173,15 @@ public class BambooGrowthManager extends ListeningManager {
             for (int z = 0; z < 16; z++)
                 for (int y = minY; y < maxY; y++) {
                     Material type = chunk.getBlock(x, y, z).getType();
-                    if (type == Material.BAMBOO || type == Material.BAMBOO_SAPLING)
-                        positions.add(pack(baseX + x, y, baseZ + z));
+                    if (type != Material.BAMBOO && type != Material.BAMBOO_SAPLING) continue;
+
+                    // Only track growable tips (nothing bamboo directly above).
+                    if (y + 1 < maxY) {
+                        Material above = chunk.getBlock(x, y + 1, z).getType();
+                        if (above == Material.BAMBOO) continue;
+                    }
+
+                    positions.add(pack(baseX + x, y, baseZ + z));
                 }
     }
 
