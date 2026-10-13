@@ -1,5 +1,6 @@
 package threeadd.glimpsy.feature.simple;
 
+import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
@@ -45,6 +46,9 @@ public class SaltBlockManager extends ListeningManager {
     @EventHandler
     public void onBreak(BlockBreakEvent event) {
         if (!forget(event.getBlock())) return;
+
+        // Like any other block, a creative player breaking it gets no drops.
+        if (event.getPlayer().getGameMode() == GameMode.CREATIVE) return;
 
         event.setDropItems(false);
         event.getBlock().getWorld().dropItemNaturally(
