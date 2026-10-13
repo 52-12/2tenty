@@ -53,8 +53,10 @@ public class TradeTargetListInventory extends ListInventory<TradeChestData> {
     protected @Nullable Consumer<InventoryClickEvent> mapClick(@NotNull TradeChestData target) {
         return event -> {
             Player player = getViewer();
-            player.closeInventory();
             TradeChestManager.sendOffer(player, fromOwner, target.getOwner());
+            // Back to the chest rather than out to the world - whether the offer went through or
+            // was rejected (target busy, etc.), the player stays where they were working
+            TradeChestManager.reopenChest(player, fromOwner);
         };
     }
 }

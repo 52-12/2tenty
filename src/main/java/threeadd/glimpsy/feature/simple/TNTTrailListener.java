@@ -11,6 +11,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.inventory.ItemStack;
+import threeadd.glimpsy.feature.tradechest.TradeChestManager;
 import threeadd.glimpsy.util.ScheduleUtil;
 import threeadd.glimpsy.util.config.ConfigManager;
 
@@ -89,7 +90,13 @@ public class TNTTrailListener implements Listener {
             } else if (!isBreakable(block)) {
                 continue;
             } else {
-                block.breakNaturally(ItemStack.of(Material.STONE_PICKAXE));
+                // Trade Chests are ender chests underneath - vanilla's non-silk-touch drop for
+                // those is 8 obsidian, which isn't what should come out of one exploding. Handle
+                // them specially (drops the Trade Chest item + its contents, same as breaking it
+                // normally) instead of falling through to breakNaturally().
+                if (!TradeChestManager.breakByExplosion(block))
+                    block.breakNaturally(ItemStack.of(Material.STONE_PICKAXE));
+
                 BROKEN_PARTICLE.location(block.getLocation()).spawn();
 
                 remaining--;

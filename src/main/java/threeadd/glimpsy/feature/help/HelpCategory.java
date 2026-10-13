@@ -13,7 +13,7 @@ public enum HelpCategory {
             Material.ENCHANTED_BOOK),
     RECIPES("Recipes", "help.category-recipes", "View a list of {name}'s custom recipes",
             Material.WRITABLE_BOOK),
-    ARTICLES("Articles", "help.category-articles", "View a list of {name}'s community written articles",
+    ARTICLES("Community Articles", "help.category-articles", "View a list of {name}'s community written articles",
             Material.BOOK);
 
     private final String title;

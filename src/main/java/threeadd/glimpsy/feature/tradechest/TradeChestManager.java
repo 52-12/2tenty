@@ -11,7 +11,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
@@ -21,6 +23,8 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.jetbrains.annotations.Nullable;
+import threeadd.glimpsy.feature.achievement.Achievement;
+import threeadd.glimpsy.feature.achievement.AchievementManager;
 import threeadd.glimpsy.feature.teams.TeamManager;
 import threeadd.glimpsy.util.ScheduleUtil;
 import threeadd.glimpsy.util.config.ConfigManager;
@@ -94,11 +98,29 @@ public class TradeChestManager extends ListeningManager {
         if (!TradeChestItem.isTradeChest(event.getItemInHand())) return;
 
         Player player = event.getPlayer();
-        if (chestsByOwner.containsKey(player.getUniqueId())) {
-            event.setCancelled(true);
-            player.sendMessage(Messages.msg("trade-chest.already-placed",
-                    "<error>You already have a Trade Chest placed - break it first"));
-            return;
+        TradeChestData existing = chestsByOwner.get(player.getUniqueId());
+        if (existing != null) {
+            // A registered chest whose block is gone (map reset, world edit, or an explosion
+            // from before those were handled) would otherwise lock the owner out of ever
+            // placing another one, with nothing left to break to clear it - self-heal instead
+            if (isStale(existing)) {
+                // Deliberately no DB delete here: the save below is a REPLACE on the same owner
+                // primary key, so it overwrites the stale row anyway - and since runAsync hands
+                // tasks to a thread pool rather than an ordered queue, a delete queued here could
+                // just as easily land after that save and wipe the chest the player just placed.
+                removeChest(existing, false);
+                player.sendMessage(Messages.msg("trade-chest.previous-gone",
+                        "<muted>Your previous Trade Chest no longer exists - placing a new one"));
+            } else {
+                event.setCancelled(true);
+                Location at = existing.getLocation();
+                player.sendMessage(Messages.msg("trade-chest.already-placed",
+                        "<error>You already have a Trade Chest placed at {x}, {y}, {z} - break it first",
+                        "x", String.valueOf(at.getBlockX()),
+                        "y", String.valueOf(at.getBlockY()),
+                        "z", String.valueOf(at.getBlockZ())));
+                return;
+            }
         }
 
         TradeChestData data = new TradeChestData(player.getUniqueId(), event.getBlockPlaced().getLocation());
@@ -109,6 +131,9 @@ public class TradeChestManager extends ListeningManager {
                 "<success>Trade Chest placed - right click it to load items and send trade offers"));
     }
 
+    // Anyone can break anyone's Trade Chest and walk off with it - stealing one (and everything
+    // loaded into it) is fair game, so this deliberately doesn't check ownership and doesn't tell
+    // the owner who took it.
     @EventHandler
     public void onBreak(BlockBreakEvent event) {
         TradeChestData data = getChestAt(event.getBlock());
@@ -116,23 +141,64 @@ public class TradeChestManager extends ListeningManager {
 
         // No vanilla ender chest drop (8 obsidian) - drop the Trade Chest item + its contents
         event.setDropItems(false);
-        Location dropAt = event.getBlock().getLocation().add(0.5, 0.5, 0.5);
-        event.getBlock().getWorld().dropItemNaturally(dropAt, TradeChestItem.create());
+        dropChestAndContents(event.getBlock(), data);
+        removeChest(data);
+    }
+
+    /**
+     * Called by explosion handling (TNT trail, explosive arrows) instead of letting the block
+     * break naturally - explosions never fire {@link BlockBreakEvent}, so without this the chest
+     * would both drop vanilla obsidian (an ender chest's non-silk-touch drop) AND leave a stale
+     * {@link #chestsByOwner} entry at that coordinate. That stale entry is a dupe: it's matched
+     * purely by block position ({@link #getChestAt}), so any later block placed on that same spot
+     * would falsely register as "the Trade Chest" the next time someone broke it, handing out a
+     * second Trade Chest (+ its old contents) for a completely unrelated block.
+     *
+     * @return true if a Trade Chest stood at this block (and was handled) - false otherwise, so
+     * the caller knows to fall back to its normal explosion-break behaviour.
+     */
+    public static boolean breakByExplosion(Block block) {
+        TradeChestData data = getChestAt(block);
+        if (data == null) return false;
+
+        dropChestAndContents(block, data);
+        block.setType(Material.AIR);
+        removeChest(data);
+        return true;
+    }
+
+    // Creepers, beds/anchors, end crystals etc. still go through the normal explosion events
+    // (TNT doesn't - TNTTrailListener cancels those and does its own breaking, calling
+    // breakByExplosion directly). Pulling handled chests out of the block list stops vanilla
+    // from also dropping the ender chest's 8 obsidian on top of what we already dropped.
+    @EventHandler(ignoreCancelled = true)
+    public void onEntityExplode(EntityExplodeEvent event) {
+        event.blockList().removeIf(TradeChestManager::breakByExplosion);
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onBlockExplode(BlockExplodeEvent event) {
+        event.blockList().removeIf(TradeChestManager::breakByExplosion);
+    }
+
+    private static void dropChestAndContents(Block block, TradeChestData data) {
+        Location dropAt = block.getLocation().add(0.5, 0.5, 0.5);
+        block.getWorld().dropItemNaturally(dropAt, TradeChestItem.create());
         for (ItemStack item : data.getContents())
             if (item != null && !item.getType().isAir())
-                event.getBlock().getWorld().dropItemNaturally(dropAt, item);
+                block.getWorld().dropItemNaturally(dropAt, item);
+    }
 
+    private static void removeChest(TradeChestData data) {
+        removeChest(data, true);
+    }
+
+    private static void removeChest(TradeChestData data, boolean deleteFromDatabase) {
         chestsByOwner.remove(data.getOwner());
-        TradeChestRepository.getInstance().runAsyncDeleteChest(data.getOwner());
+        if (deleteFromDatabase) TradeChestRepository.getInstance().runAsyncDeleteChest(data.getOwner());
 
         TradeOffer offer = offersByPlayer.get(data.getOwner());
         if (offer != null) cancelOffer(offer, "trade-chest.cancelled-broken", "The trade was cancelled - a Trade Chest was broken");
-
-        Player owner = Bukkit.getPlayer(data.getOwner());
-        if (owner != null && !owner.getUniqueId().equals(event.getPlayer().getUniqueId())) {
-            owner.sendMessage(Messages.msg("trade-chest.broken-by-other",
-                    "<error>{player} broke your Trade Chest", "player", event.getPlayer().getName()));
-        }
     }
 
     @EventHandler
@@ -155,17 +221,43 @@ public class TradeChestManager extends ListeningManager {
             return;
         }
 
+        // Once a trade is under review the preview *is* the chest for both sides - it shows both
+        // players' items and each side edits their own half in it. Opening straight into it means
+        // neither player has to find and press a button to see what the other one put in.
+        TradeOffer offer = offersByPlayer.get(data.getOwner());
+        if (offer != null && offer.getStage() == TradeOffer.Stage.REVIEW && openPreview(player, offer)) return;
+
         player.openInventory(new TradeChestInventory(data).getInventory());
     }
 
     private static @Nullable TradeChestData getChestAt(Block block) {
-        for (TradeChestData data : chestsByOwner.values())
-            if (data.getLocation().getWorld().equals(block.getWorld())
-                    && data.getLocation().getBlockX() == block.getX()
-                    && data.getLocation().getBlockY() == block.getY()
-                    && data.getLocation().getBlockZ() == block.getZ())
+        // Position alone isn't enough to identify a Trade Chest - a stale entry (chest destroyed
+        // without the registry being cleaned up) would otherwise match whatever unrelated block
+        // a player later puts on that spot, handing them a free Trade Chest + its old contents
+        // when they broke it. Requiring the block to actually still be an ender chest closes that.
+        if (block.getType() != Material.ENDER_CHEST) return null;
+
+        for (TradeChestData data : chestsByOwner.values()) {
+            Location location = data.getLocation();
+            // isWorldLoaded() first - a chest registered in a world that's since been unloaded or
+            // deleted (map reset, world removed) has a Location whose getWorld() is null, and the
+            // NPE that used to throw here aborted the whole break handler before it could suppress
+            // the vanilla drop, so every Trade Chest on the server dropped 8 obsidian instead
+            if (!location.isWorldLoaded()) continue;
+
+            if (location.getWorld().equals(block.getWorld())
+                    && location.getBlockX() == block.getX()
+                    && location.getBlockY() == block.getY()
+                    && location.getBlockZ() == block.getZ())
                 return data;
+        }
         return null;
+    }
+
+    /** True if the registered block is gone - world unloaded, or no longer an ender chest. */
+    private static boolean isStale(TradeChestData data) {
+        Location location = data.getLocation();
+        return !location.isWorldLoaded() || location.getBlock().getType() != Material.ENDER_CHEST;
     }
 
     // Trade chest GUI interaction
@@ -465,10 +557,14 @@ public class TradeChestManager extends ListeningManager {
                 Player initiator = Bukkit.getPlayer(offer.getFrom());
                 if (initiator != null)
                     initiator.sendMessage(Messages.msg("trade-chest.offer-accepted",
-                            "<success>{player} accepted your trade offer - open your Trade Chest to review the trade",
+                            "<success>{player} accepted your trade offer - review the trade in your Trade Chest",
                             "player", player.getName()));
 
+                // Anyone sitting in either Trade Chest right now (the initiator especially) gets
+                // moved straight into the shared preview - no button to press, no reopening, and
+                // they see the other side's items the moment the trade goes under review
                 openPreview(player, offer);
+                movePreviewViewersIn(offer);
             } else if (offer.getStage() == TradeOffer.Stage.REVIEW) {
                 openPreview(player, offer);
             }
@@ -503,20 +599,62 @@ public class TradeChestManager extends ListeningManager {
             target.sendMessage(Messages.msg("trade-chest.offer-received",
                     "<primary>{player} sent a trade offer to your Trade Chest - open it to accept or deny",
                     "player", nameOf(fromOwner)));
+
+        // If either side already has their Trade Chest GUI open, flip the buttons live instead
+        // of waiting for them to close and reopen it
+        refreshOpenChests(fromOwner);
+        refreshOpenChests(to);
     }
 
-    private static void openPreview(Player player, TradeOffer offer) {
+    /**
+     * Puts the player back into the Trade Chest GUI they opened the target list from, rather than
+     * dropping them out to the world - picking a trade partner shouldn't cost them the chest.
+     */
+    static void reopenChest(Player player, UUID owner) {
+        TradeChestData data = chestsByOwner.get(owner);
+        if (data == null) {
+            player.closeInventory();
+            return;
+        }
+
+        // A tick later - opening an inventory from inside the click event that's still being
+        // processed leaves the client's view out of sync with the server's
+        ScheduleUtil.scheduleSync(() -> player.openInventory(new TradeChestInventory(data).getInventory()),
+                1, ScheduleUtil.Unit.TICK);
+    }
+
+    /**
+     * Pulls everyone currently sitting in either side's Trade Chest GUI into the shared preview.
+     * Closing their chest first is deliberate: {@link #onClose} is what writes their live, still
+     * unsaved edits into the chest data (and mirrors them into an existing preview), so doing it
+     * the other way round would show a preview built from what they had a moment ago.
+     */
+    private static void movePreviewViewersIn(TradeOffer offer) {
+        for (Player viewer : new ArrayList<>(Bukkit.getOnlinePlayers())) {
+            if (!(viewer.getOpenInventory().getTopInventory().getHolder() instanceof TradeChestInventory chestGui))
+                continue;
+            if (!chestGui.getOwner().equals(offer.getFrom()) && !chestGui.getOwner().equals(offer.getTo()))
+                continue;
+
+            viewer.closeInventory();
+            openPreview(viewer, offer);
+        }
+    }
+
+    /** @return false if there's no preview to show (a chest went missing) and nothing was opened. */
+    private static boolean openPreview(Player player, TradeOffer offer) {
         TradePreviewInventory preview = offer.getPreview();
         if (preview == null) {
             TradeChestData fromChest = chestsByOwner.get(offer.getFrom());
             TradeChestData toChest = chestsByOwner.get(offer.getTo());
-            if (fromChest == null || toChest == null) return;
+            if (fromChest == null || toChest == null) return false;
 
             preview = new TradePreviewInventory(offer, fromChest, toChest);
             offer.setPreview(preview);
         }
 
         player.openInventory(preview.getInventory());
+        return true;
     }
 
     static void acceptReview(UUID side, TradeOffer offer) {
@@ -573,12 +711,29 @@ public class TradeChestManager extends ListeningManager {
         TradeChestRepository.getInstance().runAsyncSaveChest(fromChest);
         TradeChestRepository.getInstance().runAsyncSaveChest(toChest);
 
+        // Both chests were just emptied into deliveries - anyone still looking at one of them
+        // (a teammate with the GUI open, or the accepting player themself once the preview
+        // closes) is showing the pre-trade items, and would write them straight back over the
+        // emptied chest on close. Push the new contents into every open GUI instead.
+        pushToOpenGuis(offer.getFrom(), fromChest);
+        pushToOpenGuis(offer.getTo(), toChest);
+
+        awardTradeAchievement(offer.getFrom());
+        awardTradeAchievement(offer.getTo());
+
         long minutes = deliveryIntervalMillis() / 60_000L;
         notifyBoth(offer, Messages.msg("trade-chest.trade-complete",
                 "<success>Trade accepted! Deliveries arrive at your Trade Chest one stack every {minutes} minutes",
                 "minutes", String.valueOf(minutes)));
 
         closePreview(offer);
+    }
+
+    // Both sides earn it, and only if they're online to see it - an offline owner whose teammate
+    // closed the trade for them gets it the next time they complete one themselves
+    private static void awardTradeAchievement(UUID owner) {
+        Player player = Bukkit.getPlayer(owner);
+        if (player != null) AchievementManager.award(player, Achievement.ENDER_EXPRESS);
     }
 
     // Empties the chest into scheduled deliveries for the other player, one stack every interval
@@ -691,25 +846,45 @@ public class TradeChestManager extends ListeningManager {
         if (to != null) to.sendMessage(message);
     }
 
+    // Whether the trade completed or was cancelled, everyone watching the preview gets put back
+    // into their own Trade Chest rather than dumped out to the world - the chest they see is
+    // rebuilt from the post-trade data, so nobody has to reopen it to find out what happened.
     private static void closePreview(TradeOffer offer) {
         // Deferred a tick - may run from inside inventory events
         ScheduleUtil.scheduleSync(() -> {
             TradePreviewInventory preview = offer.getPreview();
             if (preview == null) return;
 
-            for (HumanEntity viewer : new ArrayList<>(preview.getInventory().getViewers()))
-                viewer.closeInventory();
+            for (HumanEntity viewer : new ArrayList<>(preview.getInventory().getViewers())) {
+                UUID side = viewer instanceof Player player ? actingSide(player, offer) : null;
+                TradeChestData chest = side == null ? null : chestsByOwner.get(side);
+
+                if (chest != null) viewer.openInventory(new TradeChestInventory(chest).getInventory());
+                else viewer.closeInventory();
+            }
             offer.setPreview(null);
         }, 1, ScheduleUtil.Unit.TICK);
     }
 
-    private static @Nullable TradeChestInventory findOpenChestGui(UUID owner) {
+    // Teammates share a chest, so more than one GUI for the same owner can be open at once
+    private static List<TradeChestInventory> openChestGuis(UUID owner) {
+        List<TradeChestInventory> open = new ArrayList<>();
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (player.getOpenInventory().getTopInventory().getHolder() instanceof TradeChestInventory chestInventory
                     && chestInventory.getOwner().equals(owner))
-                return chestInventory;
+                open.add(chestInventory);
         }
-        return null;
+        return open;
+    }
+
+    private static @Nullable TradeChestInventory findOpenChestGui(UUID owner) {
+        List<TradeChestInventory> open = openChestGuis(owner);
+        return open.isEmpty() ? null : open.getFirst();
+    }
+
+    private static void pushToOpenGuis(UUID owner, TradeChestData data) {
+        for (TradeChestInventory gui : openChestGuis(owner))
+            pushContents(gui, data);
     }
 
     // Writes the stored contents into the open GUI - only safe right after the GUI's own live
@@ -722,8 +897,8 @@ public class TradeChestManager extends ListeningManager {
 
     // Only re-renders the button slots - item slots are the player's live editing surface
     private static void refreshOpenChests(UUID owner) {
-        TradeChestInventory gui = findOpenChestGui(owner);
-        if (gui != null) gui.refreshButtons();
+        for (TradeChestInventory gui : openChestGuis(owner))
+            gui.refreshButtons();
     }
 
     private static String nameOf(UUID id) {

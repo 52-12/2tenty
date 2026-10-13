@@ -3,6 +3,7 @@ package threeadd.glimpsy.util.config;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.jetbrains.annotations.Nullable;
 import threeadd.glimpsy.Glimpsy;
 
 import java.util.ArrayList;
@@ -49,6 +50,28 @@ public class ConfigManager {
 
     public static List<String> getStringList(String path) {
         return config().getStringList(path);
+    }
+
+    public static String getString(String path, String defaultValue) {
+        return config().getString(path, defaultValue);
+    }
+
+    /** The raw section at {@code path}, or null if config.yml doesn't define one. */
+    public static @Nullable ConfigurationSection getSection(String path) {
+        return config().getConfigurationSection(path);
+    }
+
+    /**
+     * Reads {@code key} out of the map at {@code sectionPath} (e.g. an enchantment-level ->
+     * value table). {@code defaultValue} is returned both when the section is missing entirely
+     * and when it exists but doesn't have that particular key.
+     * <p>
+     * Deliberately not an overload of {@link #getInt(String, int)} - the two would differ only
+     * by argument count, which reads far too easily as "path, default" at a call site.
+     */
+    public static int getMappedInt(String sectionPath, int key, int defaultValue) {
+        ConfigurationSection section = config().getConfigurationSection(sectionPath);
+        return section == null ? defaultValue : section.getInt(String.valueOf(key), defaultValue);
     }
 
     /**

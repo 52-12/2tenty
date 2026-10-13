@@ -45,7 +45,7 @@ public class ColorNickCommand extends CustomCommand {
 
     @Override
     public Component createUsage() {
-        return ComponentParser.parseRichString("Color your username with MiniMessage tags (max 24 characters, must be exactly your real username)");
+        return ComponentParser.parseRichString("Colour your username with MiniMessage tags - the plain text must still be exactly your username");
     }
 
     @Override
