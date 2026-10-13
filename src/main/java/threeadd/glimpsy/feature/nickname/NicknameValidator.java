@@ -4,7 +4,6 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
-import threeadd.glimpsy.util.config.ConfigManager;
 import threeadd.glimpsy.util.config.Messages;
 
 import java.util.regex.Pattern;
@@ -18,10 +17,6 @@ import java.util.regex.Pattern;
  * styled version of your own real name, nothing more.
  */
 public class NicknameValidator {
-
-    private static int maxLength() {
-        return ConfigManager.getInt("nicknames.max-length", 24);
-    }
 
     private static final Pattern SAFE_CHARACTERS = Pattern.compile("^[a-zA-Z0-9 _-]+$");
 
@@ -57,13 +52,17 @@ public class NicknameValidator {
 
         String plainText = PlainTextComponentSerializer.plainText().serialize(parsed);
 
+        // MiniMessage is lenient, so a tag it can't resolve (e.g. a bare <color>, which needs an
+        // argument like <color:red>) is swallowed and left in the text verbatim. Spot the leftover
+        // markup and give the colour-tag hint instead of the misleading whitelist error below.
+        if (plainText.indexOf('<') >= 0 || plainText.indexOf('>') >= 0)
+            return Result.fail(Messages.get("nicknames.unparseable", "That nickname couldn't be parsed - check your color tags"));
+
         if (plainText.isBlank())
             return Result.fail(Messages.get("nicknames.empty", "Nicknames can't be empty"));
 
-        if (plainText.length() > maxLength())
-            return Result.fail(Messages.get("nicknames.too-long", "Nicknames can't be longer than {max} characters",
-                    "max", String.valueOf(maxLength())));
-
+        // No length cap: the visible text must equal the username anyway (checked below), so the
+        // player can use as many colour/gradient tags around it as they like.
         if (!SAFE_CHARACTERS.matcher(plainText).matches())
             return Result.fail(Messages.get("nicknames.bad-characters", "Nicknames can only contain letters, numbers, spaces, - and _"));
 
