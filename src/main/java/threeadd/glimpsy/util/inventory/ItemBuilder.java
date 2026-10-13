@@ -21,6 +21,9 @@ import java.util.regex.Pattern;
 
 public class ItemBuilder {
 
+    // Compiled once - withLore() runs for every GUI item built.
+    private static final Pattern NEWLINE = Pattern.compile("\n");
+
     private ItemStack item;
 
     /**
@@ -82,7 +85,7 @@ public class ItemBuilder {
 
             List<Component> out = new ArrayList<>();
             for (Component line : lore) {
-                List<Component> splitLines = ComponentSplitter.split(line, Pattern.compile("\n"));
+                List<Component> splitLines = ComponentSplitter.split(line, NEWLINE);
 
                 for (Component split : splitLines) {
                     for (Component wrapped : ComponentWrapper.wrapComponent(split, 75)) {

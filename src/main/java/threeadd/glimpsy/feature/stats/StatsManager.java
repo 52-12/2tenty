@@ -47,7 +47,9 @@ public class StatsManager extends ListeningManager {
     }
 
     public static @Nullable PlayerStats getStats(UUID playerId) {
-        foldAllSessionPlaytime();
+        // Only fold this player's own session - folding every session here made every scoreboard
+        // read O(players) and, called per-player-per-second, O(players^2) per second.
+        foldSessionPlaytime(playerId);
         return statsById.get(playerId);
     }
 

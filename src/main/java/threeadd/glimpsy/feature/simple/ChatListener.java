@@ -27,6 +27,11 @@ public class ChatListener implements Listener {
 
     private static final TextColor MENTION_COLOR = TextColor.color(0xFFD54F);
 
+    // Cached across messages - only rebuilt when the online roster changes, instead of compiling a
+    // regex per receiver per message.
+    private static volatile String mentionCacheKey;
+    private static volatile Pattern mentionCachePattern;
+
     @EventHandler
     public void onChat(AsyncChatEvent event) {
 
@@ -68,6 +73,9 @@ public class ChatListener implements Listener {
         Component fishesComp = Messages.msg("chat.placeholder-fishes", "<#FFE08F>[Fishes : {value}]", "value", fishes);
         Component playtimeComp = Messages.msg("chat.placeholder-playtime", "<#FFE08F>[Playtime : {value}]", "value", playtime);
 
+        // Built once per message (not per receiver), and cached while the roster is unchanged.
+        Pattern mentions = mentionPattern();
+
         event.renderer(((source, sourceDisplayName, message, receiver) -> {
 
             Component name = nickname != null
@@ -85,7 +93,6 @@ public class ChatListener implements Listener {
                 name = ComponentParser.getDistancedComponent(source.getLocation(), playerReceiver.getLocation(), name);
                 body = ComponentParser.getDistancedComponent(source.getLocation(), playerReceiver.getLocation(), body);
 
-                Pattern mentions = mentionPattern();
                 if (mentions != null) body = highlightMentions(body, mentions);
             }
 
@@ -111,14 +118,26 @@ public class ChatListener implements Listener {
     }
 
     // "@" followed by any online player's name (nicknames are just styled real usernames, so the
-    // plain name is what's typed).
+    // plain name is what's typed). Cached while the roster is unchanged so we don't recompile a
+    // regex on every message.
     private static Pattern mentionPattern() {
         List<String> names = new ArrayList<>();
         for (Player player : Bukkit.getOnlinePlayers())
-            names.add(Pattern.quote(player.getName()));
+            names.add(player.getName());
 
         if (names.isEmpty()) return null;
-        return Pattern.compile("@(?:" + String.join("|", names) + ")\\b", Pattern.CASE_INSENSITIVE);
+
+        names.sort(String.CASE_INSENSITIVE_ORDER);
+        String key = String.join(",", names);
+
+        Pattern cached = mentionCachePattern;
+        if (cached != null && key.equals(mentionCacheKey)) return cached;
+
+        Pattern built = Pattern.compile("@(?:" + String.join("|", names.stream().map(Pattern::quote).toList()) + ")\\b",
+                Pattern.CASE_INSENSITIVE);
+        mentionCacheKey = key;
+        mentionCachePattern = built;
+        return built;
     }
 
     // Re-colours any @mention in the tree, overriding the distance fade applied just before it.

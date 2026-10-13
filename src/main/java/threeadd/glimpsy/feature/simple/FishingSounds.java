@@ -61,6 +61,13 @@ public final class FishingSounds {
         if (previous != null) lastBobbers.put(uuid, new CachedBobber(previous, System.currentTimeMillis()));
     }
 
+    /** Drops every per-player entry - called on quit so these maps don't grow unbounded. */
+    static void clear(UUID uuid) {
+        activeBobbers.remove(uuid);
+        lastBobbers.remove(uuid);
+        hookedAt.remove(uuid);
+    }
+
     /** The player's own bobber - the live one, or its last position for a moment after reel-in. */
     public static Location getOwnBobber(UUID uuid) {
         Location active = activeBobbers.get(uuid);

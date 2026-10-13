@@ -57,6 +57,10 @@ public class PlayerPreferenceRepository extends Repository<Void> {
         return values;
     }
 
+    public CompletableFuture<Map<String, Boolean>> loadAsync(UUID uuid) {
+        return supplyAsync(() -> loadSync(uuid));
+    }
+
     public CompletableFuture<Void> setAsync(UUID uuid, String key, boolean value) {
         return runAsync(() -> executeUpdate(
                 "REPLACE INTO player_preferences (uuid, pref_key, enabled) VALUES (?, ?, ?)",
