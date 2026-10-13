@@ -831,6 +831,7 @@ public class TeamManager extends ListeningManager {
     public void onDamage(EntityDamageByEntityEvent event) {
         if (!(event.getEntity() instanceof Player victim)) return;
         if (!(event.getDamager() instanceof Player attacker)) return;
+        if (attacker.getUniqueId().equals(victim.getUniqueId())) return; // self-inflicted damage isn't friendly fire
         if (!isSameTeamOrAllied(attacker, victim)) return;
 
         event.setDamage(event.getDamage() * allyDamageMultiplier());
@@ -854,6 +855,10 @@ public class TeamManager extends ListeningManager {
         Player victim = event.getEntity();
         Player killer = victim.getKiller();
         if (killer == null) return;
+        // Dying to your own firework (or any other self-inflicted source Paper attributes back to
+        // you) isn't friendly fire - isSameTeam(self, self) is always true, so this has to be
+        // filtered out before the team comparison or every self-kill becomes a strike.
+        if (killer.getUniqueId().equals(victim.getUniqueId())) return;
         if (!isSameTeam(killer, victim)) return;
 
         int count = friendlyKillCounts.merge(killer.getUniqueId(), 1, Integer::sum);
