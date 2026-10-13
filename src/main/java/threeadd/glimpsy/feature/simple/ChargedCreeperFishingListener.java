@@ -70,6 +70,7 @@ public class ChargedCreeperFishingListener implements Listener {
 
         FishingSounds.playCatch(location, Sound.ENTITY_CREEPER_PRIMED, 1.0F, 1.0F, player);
         location.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, location, 20, 0.3, 0.3, 0.3);
+        FishingSounds.playCatch(location, Sound.ENTITY_FISHING_BOBBER_RETRIEVE, 1.0F, 1.0F, player); // pull like a normal catch
 
         player.sendMessage(ComponentParser.parseRichString("Something charged bites at your line..."));
 
