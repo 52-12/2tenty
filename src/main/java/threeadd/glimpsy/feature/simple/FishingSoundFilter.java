@@ -60,11 +60,19 @@ public class FishingSoundFilter extends PacketListenerAbstract {
             Vector3d position = wrapper.getPosition();
             debugKey(key);
 
+            Location pull = FishingSounds.getRecentPlayerPull();
+            boolean nearPull = pull != null && isNear(pull, position);
+
             if (key.equals(RETRIEVE_KEY)) {
                 // A real catch being hauled in is worth hearing - only the random-player-fish pull
                 // (tagged in PlayerFishingListener) is muted.
-                Location pull = FishingSounds.getRecentPlayerPull();
-                if (pull != null && isNear(pull, position)) event.setCancelled(true);
+                if (nearPull) event.setCancelled(true);
+                return;
+            }
+
+            // The player caught by the random-player-fish splashes into the water it's dropped in.
+            if (nearPull && isSplashOrSwim(key)) {
+                event.setCancelled(true);
                 return;
             }
 
@@ -105,6 +113,10 @@ public class FishingSoundFilter extends PacketListenerAbstract {
     private static void debugKey(String key) {
         if (loggedKeys.size() < 1000 && loggedKeys.add(key))
             log.info("[fishing-sound] muted player heard key: {}", key);
+    }
+
+    private static boolean isSplashOrSwim(String key) {
+        return key.endsWith(SPLASH_SUFFIX) || key.endsWith(".swim");
     }
 
     // A positional sound belongs to this player if it's at their own bobber or right on top of them
