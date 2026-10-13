@@ -63,5 +63,7 @@ public class PlayerFishingListener implements Listener {
 
         fisher.sendMessage(ComponentParser.parseRichString("You reeled in <yellow>" + caught.getName() + "</yellow>!"));
         caught.sendMessage(ComponentParser.parseRichString("<yellow>" + fisher.getName() + "</yellow> caught you with their fishing rod!"));
+
+        event.getHook().remove(); // end the cast so it can't also land a normal fish
     }
 }

@@ -178,6 +178,9 @@ public class GuardianFishingListener implements Listener {
 
         player.sendMessage(ComponentParser.parseRichString(
                 elder ? "Something ancient stirs beneath the surface..." : "You feel eyes watching from below..."));
+
+        // End the cast outright so the same bobber can't also land a normal fish afterwards.
+        event.getHook().remove();
     }
 
     @EventHandler
