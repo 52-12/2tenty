@@ -4,17 +4,21 @@ import org.bukkit.Keyed;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Furnace;
-import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.inventory.FurnaceExtractEvent;
+import org.bukkit.event.inventory.FurnaceSmeltEvent;
 import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import threeadd.glimpsy.feature.recipes.SaltRecipe;
 import threeadd.glimpsy.feature.recipes.SaltedJerkyRecipe;
 
 public class SaltListener implements Listener {
+
+    private static final Logger log = LoggerFactory.getLogger(SaltListener.class);
 
     // Salt is white concrete powder under the hood, so it would otherwise silently work in
     // every vanilla concrete powder recipe (recipe matching is by Material, not display
@@ -38,35 +42,39 @@ public class SaltListener implements Listener {
         event.getInventory().setResult(null);
     }
 
-    // Water bucket -> Salt. A vanilla furnace recipe can't leave a container behind (the only
-    // vanilla case, wet sponge, is hardcoded), and swapping the input slot from a smelt event is a
-    // timing lottery. So instead the empty bucket is put back into the furnace's top (input) slot
-    // when the salt is taken out - ready to refill and use again. If the slot is already occupied
-    // (e.g. a hopper refilled it), the buckets go to the player so none are lost.
-    @EventHandler
-    public void onExtract(FurnaceExtractEvent event) {
-        if (event.getItemType() != Material.WHITE_CONCRETE_POWDER) return;
+    // Water bucket -> Salt. A vanilla furnace recipe has no way to leave a container behind (the
+    // only vanilla case, wet sponge holding a bucket, is hardcoded), and FurnaceSmeltEvent fires
+    // just before vanilla shrinks the input - so anything done a tick later is a race. Instead we
+    // take the smelt over completely *inside* the event: cancel the vanilla outcome, drop the
+    // empty bucket back into the input slot, and place the Salt ourselves. No timing window.
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onSmelt(FurnaceSmeltEvent event) {
+        if (event.getSource().getType() != Material.WATER_BUCKET) return;
+        if (!SaltRecipe.isSalt(event.getResult())) return;
 
-        int buckets = event.getItemAmount() / 2; // recipe yields 2 salt per water bucket
-        if (buckets <= 0) return;
+        ItemStack salt = SaltRecipe.createSaltItem(2);
 
         Block block = event.getBlock();
-        if (block.getType() == Material.FURNACE) {
-            Furnace furnace = (Furnace) block.getState();
-            ItemStack input = furnace.getInventory().getSmelting();
+        Furnace furnace = (Furnace) block.getState();
+        ItemStack output = furnace.getInventory().getResult();
 
-            if (input == null || input.getType().isAir()) {
-                int inSlot = Math.min(buckets, Material.BUCKET.getMaxStackSize());
-                furnace.getInventory().setSmelting(new ItemStack(Material.BUCKET, inSlot));
-                furnace.update(true);
+        // If the output somehow holds a different item, don't interfere - vanilla's own "is there
+        // room" check means this shouldn't happen, but cancelling without taking over would loop.
+        if (output != null && !output.getType().isAir() && !output.isSimilar(salt)) return;
 
-                buckets -= inSlot;
-                if (buckets <= 0) return;
-            }
+        event.setCancelled(true);
+
+        if (output == null || output.getType().isAir()) {
+            furnace.getInventory().setResult(salt);
+        } else {
+            ItemStack grown = salt.clone();
+            grown.setAmount(output.getAmount() + salt.getAmount());
+            furnace.getInventory().setResult(grown);
         }
 
-        Player player = event.getPlayer();
-        for (ItemStack leftover : player.getInventory().addItem(new ItemStack(Material.BUCKET, buckets)).values())
-            player.getWorld().dropItemNaturally(player.getLocation(), leftover);
+        furnace.getInventory().setSmelting(new ItemStack(Material.BUCKET));
+        furnace.update(true);
+
+        log.info("Salt smelted - returned an empty bucket to the furnace input slot");
     }
 }
