@@ -23,6 +23,7 @@ import threeadd.glimpsy.feature.teams.TeamManager;
 import threeadd.glimpsy.feature.timezone.TimezoneManager;
 import threeadd.glimpsy.feature.tradechest.TradeChestManager;
 import threeadd.glimpsy.feature.wind.WindManager;
+import threeadd.glimpsy.util.preferences.PlayerPreferencesManager;
 import threeadd.glimpsy.util.registry.Registry;
 
 public class ManagerRegistry extends Registry<Manager> {
@@ -52,6 +53,7 @@ public class ManagerRegistry extends Registry<Manager> {
                 new BambooGrowthManager(),
                 new SaltBlockManager(),
                 new HeadCollectionManager(),
-                new AchievementManager());
+                new AchievementManager(),
+                new PlayerPreferencesManager());
     }
 }

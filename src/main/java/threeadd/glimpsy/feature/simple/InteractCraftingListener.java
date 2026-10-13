@@ -8,29 +8,24 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.MenuType;
-
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+import threeadd.glimpsy.util.preferences.PlayerPreferences;
 
 public class InteractCraftingListener implements Listener {
 
-    // Per-player opt-out (default on for everyone), session-only like the other toggles
-    private static final Set<UUID> disabled = ConcurrentHashMap.newKeySet();
+    private static final String ENABLED_KEY = "right-click-crafting";
 
+    // Per-player opt-out (default on for everyone), now persisted across restarts (#3).
     public static boolean isEnabled(Player player) {
-        return !disabled.contains(player.getUniqueId());
+        return PlayerPreferences.get(player, ENABLED_KEY, true);
     }
 
     /**
      * @return the new state (true if right-click crafting is now enabled for this player)
      */
     public static boolean toggle(Player player) {
-        UUID id = player.getUniqueId();
-        if (disabled.remove(id)) return true;
-
-        disabled.add(id);
-        return false;
+        boolean nowEnabled = !isEnabled(player);
+        PlayerPreferences.set(player, ENABLED_KEY, nowEnabled);
+        return nowEnabled;
     }
 
     @SuppressWarnings("UnstableApiUsage")

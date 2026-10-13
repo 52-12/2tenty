@@ -5,7 +5,6 @@ import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerQuitEvent;
 import threeadd.glimpsy.util.text.ComponentParser;
 
 public class TeamChatListener implements Listener {
@@ -26,10 +25,5 @@ public class TeamChatListener implements Listener {
 
         String plainMessage = PlainTextComponentSerializer.plainText().serialize(event.message());
         TeamChatManager.send(player, plainMessage);
-    }
-
-    @EventHandler
-    public void onQuit(PlayerQuitEvent event) {
-        TeamChatManager.onQuit(event.getPlayer());
     }
 }
