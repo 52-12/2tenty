@@ -23,6 +23,11 @@ public final class FishingSounds {
 
     private static final Map<UUID, Location> ownBobbers = new ConcurrentHashMap<>();
 
+    // Set when the random-player-fish feature yanks someone up, so the filter can tell that
+    // reel-in apart from an ordinary catch and mute it.
+    private static volatile Location recentPlayerPull;
+    private static volatile long recentPlayerPullAt;
+
     private FishingSounds() {
     }
 
@@ -50,6 +55,15 @@ public final class FishingSounds {
     /** Every currently-active bobber location, for matching generic splash variants to a bobber. */
     public static Iterable<Location> getAllBobbers() {
         return ownBobbers.values();
+    }
+
+    public static void markPlayerPull(Location location) {
+        recentPlayerPull = location.clone();
+        recentPlayerPullAt = System.currentTimeMillis();
+    }
+
+    public static Location getRecentPlayerPull() {
+        return System.currentTimeMillis() - recentPlayerPullAt > 1500 ? null : recentPlayerPull;
     }
 
     public static void playCatch(Location location, Sound sound, float volume, float pitch, Player source) {

@@ -9,32 +9,35 @@ import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSo
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Silences other players' fishing sounds for anyone who opted out with /togglefishingsounds. Those
  * sounds are played by the server itself, not by us, so the only way to drop them for one player is
  * at the packet level - what issue #16 suggested.
  * <p>
- * A muted player still hears:
- * <ul>
- *     <li>their own rod (cast / water splash / reel), by proximity to them or their own bobber;</li>
- *     <li>the reel-in "pull-up" sound ({@code entity.fishing_bobber.retrieve}) from anyone - that's
- *         the sound of a catch actually being hauled in, which is worth keeping;</li>
- *     <li>their own XP-pickup chime.</li>
- * </ul>
- * <p>
  * Runs on a Netty thread, so it must never touch the world/chunks - everything it needs is cached.
  */
 public class FishingSoundFilter extends PacketListenerAbstract {
+
+    private static final Logger log = LoggerFactory.getLogger(FishingSoundFilter.class);
 
     private static final String FISHING_BOBBER_PREFIX = "minecraft:entity.fishing_bobber";
     private static final String RETRIEVE_KEY = "minecraft:entity.fishing_bobber.retrieve";
     private static final String EXPERIENCE_PICKUP_KEY = "minecraft:entity.experience_orb.pickup";
     private static final String ENTITY_PREFIX = "minecraft:entity.";
     private static final String SPLASH_SUFFIX = ".splash";
+
     private static final double OWN_SOUND_RADIUS_SQUARED = 4.0; // 2 blocks
+    private static final double OWN_XP_RADIUS_SQUARED = 2.25;   // 1.5 blocks - own XP is at your feet
+
+    // Temporary diagnostic: records every distinct sound key a muted player receives.
+    private static final Set<String> loggedKeys = ConcurrentHashMap.newKeySet();
 
     @Override
     public void onPacketSend(PacketSendEvent event) {
@@ -54,15 +57,22 @@ public class FishingSoundFilter extends PacketListenerAbstract {
         if (positional) {
             WrapperPlayServerSoundEffect wrapper = new WrapperPlayServerSoundEffect(event);
             String key = wrapper.getSound().getSoundId().toString();
-
-            if (key.equals(RETRIEVE_KEY)) return; // the actual pull-up of a catch stays audible
-
             Vector3d position = wrapper.getPosition();
+            debugKey(key);
+
+            if (key.equals(RETRIEVE_KEY)) {
+                // A real catch being hauled in is worth hearing - only the random-player-fish pull
+                // (tagged in PlayerFishingListener) is muted.
+                Location pull = FishingSounds.getRecentPlayerPull();
+                if (pull != null && isNear(pull, position)) event.setCancelled(true);
+                return;
+            }
 
             if (key.equals(EXPERIENCE_PICKUP_KEY)) {
-                // Vanilla broadcasts this to nearby players whenever someone gains XP - mute other
-                // players' XP, keep the muted player's own.
-                if (!isNear(player.getLocation(), position)) event.setCancelled(true);
+                // Vanilla broadcasts this to nearby players when someone gains XP - keep only the
+                // muted player's own (at their feet), mute everyone else's.
+                if (distanceSquared(player.getLocation(), position) > OWN_XP_RADIUS_SQUARED)
+                    event.setCancelled(true);
                 return;
             }
 
@@ -80,6 +90,7 @@ public class FishingSoundFilter extends PacketListenerAbstract {
 
         WrapperPlayServerEntitySoundEffect wrapper = new WrapperPlayServerEntitySoundEffect(event);
         String key = wrapper.getSound().getSoundId().toString();
+        debugKey(key);
 
         if (key.equals(RETRIEVE_KEY)) return;
 
@@ -89,6 +100,11 @@ public class FishingSoundFilter extends PacketListenerAbstract {
 
         // Entity sounds aren't positional, so the only thing we can trust is "is it this player".
         if (wrapper.getEntityId() != player.getEntityId() && bobberSound) event.setCancelled(true);
+    }
+
+    private static void debugKey(String key) {
+        if (loggedKeys.size() < 1000 && loggedKeys.add(key))
+            log.info("[fishing-sound] muted player heard key: {}", key);
     }
 
     // A positional sound belongs to this player if it's at their own bobber or right on top of them
