@@ -122,35 +122,37 @@ public class ChatListener implements Listener {
     }
 
     // Re-colours any @mention in the tree, overriding the distance fade applied just before it.
+    // The already-processed original children are re-attached after the split parts - the mention
+    // pieces we create must NOT be fed back through this method, or "@name" matches itself and the
+    // recursion never ends (StackOverflowError).
     private static Component highlightMentions(Component component, Pattern pattern) {
-        Component rebuilt = component;
+        List<Component> processedChildren = new ArrayList<>(component.children().size());
+        for (Component child : component.children())
+            processedChildren.add(highlightMentions(child, pattern));
 
-        if (component instanceof TextComponent text && !text.content().isEmpty() && pattern.matcher(text.content()).find()) {
-            TextComponent.Builder builder = Component.text().style(text.style());
-
-            String content = text.content();
-            Matcher matcher = pattern.matcher(content);
-            int last = 0;
-            while (matcher.find()) {
-                if (matcher.start() > last)
-                    builder.append(Component.text(content.substring(last, matcher.start())));
-
-                builder.append(Component.text(matcher.group()).color(MENTION_COLOR));
-                last = matcher.end();
-            }
-            if (last < content.length())
-                builder.append(Component.text(content.substring(last)));
-
-            rebuilt = builder.build();
+        if (!(component instanceof TextComponent text) || text.content().isEmpty()
+                || !pattern.matcher(text.content()).find()) {
+            return processedChildren.isEmpty() ? component : component.children(processedChildren);
         }
 
-        List<Component> children = rebuilt.children();
-        if (children.isEmpty()) return rebuilt;
+        TextComponent.Builder builder = Component.text().style(text.style());
 
-        List<Component> highlighted = new ArrayList<>(children.size());
-        for (Component child : children)
-            highlighted.add(highlightMentions(child, pattern));
+        String content = text.content();
+        Matcher matcher = pattern.matcher(content);
+        int last = 0;
+        while (matcher.find()) {
+            if (matcher.start() > last)
+                builder.append(Component.text(content.substring(last, matcher.start())));
 
-        return rebuilt.children(highlighted);
+            builder.append(Component.text(matcher.group()).color(MENTION_COLOR));
+            last = matcher.end();
+        }
+        if (last < content.length())
+            builder.append(Component.text(content.substring(last)));
+
+        for (Component child : processedChildren)
+            builder.append(child);
+
+        return builder.build();
     }
 }
