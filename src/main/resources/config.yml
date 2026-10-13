@@ -60,6 +60,10 @@ bamboo:
   # (3 per 16x16x16 section), so start low and raise it until growth feels right.
   # 0 = disabled, no extra growth.
   extra-random-ticks: 0
+  # Cap on how many positions are sampled per tick across all chunks. Chunks are visited a few at
+  # a time on a rotating cursor, so a large extra-random-ticks value spreads over ticks instead of
+  # costing the whole server every tick. Raise this for faster bamboo growth (more CPU).
+  max-samples-per-tick: 2000
 
 stats:
   top-list-size: 10
