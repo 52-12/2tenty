@@ -16,6 +16,7 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
@@ -90,6 +91,30 @@ public class GuardianFishingListener implements Listener {
         return ConfigManager.getMaterialList("guardian-fishing.trim-templates", TRIM_SMITHING_TEMPLATES_DEFAULT);
     }
 
+    // Free-form drop tables on top of the trim drops below - empty out of the box, so a server
+    // that wants fished guardians worth hunting can fill them in without touching any code.
+    private static final Material[] NO_LOOT = new Material[0];
+
+    private static Material[] loot(String pool) {
+        return ConfigManager.getMaterialList("guardian-fishing." + pool, NO_LOOT);
+    }
+
+    /** Rolls one configured pool onto the death drops, if it's set up and the chance lands. */
+    private static void rollLoot(EntityDeathEvent event, String pool, String chanceKey, double defaultChance) {
+        Material[] materials = loot(pool);
+        if (materials.length == 0) return;
+
+        double chance = ConfigManager.getDouble("guardian-fishing." + chanceKey, defaultChance);
+        if (chance <= 0 || ThreadLocalRandom.current().nextDouble() >= chance) return;
+
+        Material material = materials[ThreadLocalRandom.current().nextInt(materials.length)];
+        int min = Math.max(1, ConfigManager.getInt("guardian-fishing." + pool + "-min-amount", 1));
+        int max = Math.max(min, ConfigManager.getInt("guardian-fishing." + pool + "-max-amount", 1));
+        int amount = min + ThreadLocalRandom.current().nextInt(max - min + 1);
+
+        event.getDrops().add(new ItemStack(material, amount));
+    }
+
     // All 18 armor trim smithing templates - Elder Guardian exclusive drop.
     private static final Material[] TRIM_SMITHING_TEMPLATES_DEFAULT = {
             Material.BOLT_ARMOR_TRIM_SMITHING_TEMPLATE,
@@ -115,7 +140,10 @@ public class GuardianFishingListener implements Listener {
     // Mirrors ChargedCreeperFishingListener's anti-spam gate - one fished guardian per player at a time.
     private static final Set<UUID> playersWithActiveGuardian = ConcurrentHashMap.newKeySet();
 
-    @EventHandler
+    // Special catches are mutually exclusive: this runs at LOW, before the player/creeper rolls, and
+    // cancels the catch when it triggers. ignoreCancelled makes the other rolls skip an already-won
+    // catch instead of rolling on top of it, so one reel-in can't yield two special outcomes.
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public void onFish(PlayerFishEvent event) {
         if (event.getState() != PlayerFishEvent.State.CAUGHT_FISH) return;
 
@@ -155,6 +183,11 @@ public class GuardianFishingListener implements Listener {
         String fisherId = event.getEntity().getPersistentDataContainer().get(FISHER_KEY, PersistentDataType.STRING);
         if (fisherId != null)
             playersWithActiveGuardian.remove(UUID.fromString(fisherId));
+
+        // The configurable pools roll independently of the trim drops below, so an admin can add
+        // loot without disturbing the balance of what's already there
+        rollLoot(event, "loot", "loot-chance", 1.0);
+        if (elder) rollLoot(event, "elder-loot", "elder-loot-chance", 1.0);
 
         if (elder) {
             // Mutually exclusive - a kill either yields the rare full trimmed piece, or (much

@@ -9,6 +9,7 @@ import org.bukkit.entity.Creeper;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
@@ -43,7 +44,9 @@ public class ChargedCreeperFishingListener implements Listener {
     // getting more than one per reel-in and spam-casting for repeat rolls.
     private static final Set<UUID> playersWithActiveCreeper = ConcurrentHashMap.newKeySet();
 
-    @EventHandler
+    // HIGH: last of the three special rolls, and skipped if the guardian (LOW) or player (NORMAL)
+    // roll already cancelled the catch - so at most one special outcome fires per reel-in.
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onFish(PlayerFishEvent event) {
         if (event.getState() != PlayerFishEvent.State.CAUGHT_FISH) return;
 
