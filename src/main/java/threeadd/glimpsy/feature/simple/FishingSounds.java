@@ -25,6 +25,11 @@ public final class FishingSounds {
 
     private static final Map<UUID, Location> activeBobbers = new ConcurrentHashMap<>();
     private static final Map<UUID, CachedBobber> lastBobbers = new ConcurrentHashMap<>();
+    private static final Map<UUID, Long> hookedAt = new ConcurrentHashMap<>();
+
+    // Set at the actual CAUGHT_ENTITY event; this window only covers the few ticks it takes the
+    // pull sound packet to arrive - not an arbitrary timer.
+    private static final long HOOK_PACKET_WINDOW_MILLIS = 400;
 
     private record CachedBobber(Location location, long at) {
     }
@@ -73,9 +78,14 @@ public final class FishingSounds {
         return activeBobbers.values();
     }
 
-    /** Plays the reel/pull sound for a player a rod just hooked, since we mute the vanilla one. */
-    public static void playPullSound(Player player) {
-        player.playSound(player.getLocation(), Sound.ENTITY_FISHING_BOBBER_RETRIEVE, 1.0F, 1.0F);
+    /** Called at the moment a rod hooks this player, so their pull sound is allowed through. */
+    public static void markHooked(Player player) {
+        hookedAt.put(player.getUniqueId(), System.currentTimeMillis());
+    }
+
+    public static boolean wasRecentlyHooked(UUID uuid) {
+        Long at = hookedAt.get(uuid);
+        return at != null && System.currentTimeMillis() - at <= HOOK_PACKET_WINDOW_MILLIS;
     }
 
     public static void playCatch(Location location, Sound sound, float volume, float pitch, Player source) {

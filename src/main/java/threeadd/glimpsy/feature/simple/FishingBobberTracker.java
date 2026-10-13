@@ -34,10 +34,9 @@ public class FishingBobberTracker implements Listener {
         switch (event.getState()) {
             case FISHING -> hooks.put(id, event.getHook());
             case CAUGHT_ENTITY -> {
-                // We mute the vanilla reel for muted players, so play the pull back for the one
-                // who was actually hooked - exactly at the event, no timer guessing.
-                if (event.getCaught() instanceof Player caught && FishingSounds.isMuted(caught))
-                    FishingSounds.playPullSound(caught);
+                // Marked at the exact hook event; the filter lets this one reel through for a few
+                // ticks (packet latency), so it isn't an arbitrary timer.
+                if (event.getCaught() instanceof Player caught) FishingSounds.markHooked(caught);
             }
             case CAUGHT_FISH, REEL_IN, FAILED_ATTEMPT -> hooks.remove(id);
             default -> {
