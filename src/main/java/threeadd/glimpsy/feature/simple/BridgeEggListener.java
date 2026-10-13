@@ -2,6 +2,7 @@ package threeadd.glimpsy.feature.simple;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -13,13 +14,19 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
+import org.bukkit.event.inventory.ClickType;
+import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import org.bukkit.event.player.PlayerEggThrowEvent;
 import org.bukkit.block.ShulkerBox;
 import org.bukkit.inventory.CraftingInventory;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.BlockStateMeta;
 import org.bukkit.inventory.meta.BundleMeta;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -28,6 +35,8 @@ import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.Nullable;
 import threeadd.glimpsy.Glimpsy;
+import threeadd.glimpsy.feature.achievement.Achievement;
+import threeadd.glimpsy.feature.achievement.AchievementManager;
 import threeadd.glimpsy.util.ScheduleUtil;
 import threeadd.glimpsy.util.config.ConfigManager;
 import threeadd.glimpsy.util.config.Messages;
@@ -146,20 +155,28 @@ public class BridgeEggListener implements Listener {
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
         if (!(event.getInventory() instanceof CraftingInventory craftingInventory)) return;
-        if (event.getSlot() != 0) return;
+        if (!(event.getWhoClicked() instanceof Player player)) return;
 
+        if (event.getSlot() == 0) {
+            handleResultClick(event, player, craftingInventory);
+            return;
+        }
+
+        // A Bridge Egg can never be a crafting ingredient, so there's no legitimate reason for one
+        // to sit in a grid slot - and while parked there it was invisible to countBridgeEggs, which
+        // let a player stash one and craft a second past the per-player limit (#19).
+        if (wouldPutBridgeEggInGrid(event, player, craftingInventory))
+            event.setCancelled(true);
+    }
+
+    private void handleResultClick(InventoryClickEvent event, Player player, CraftingInventory craftingInventory) {
         ItemStack result = craftingInventory.getResult();
         if (!isBridgeEgg(result)) return;
-        if (!(event.getWhoClicked() instanceof Player player)) return;
 
         event.setCancelled(true);
 
-        int limit = maxPerPlayer();
-        if (countBridgeEggs(player) >= limit) {
-            player.sendMessage(limit == 1
-                    ? Messages.msg("bridge-egg.limit-one", "<error>You can only carry one Bridge Egg at a time")
-                    : Messages.msg("bridge-egg.limit-many", "<error>You can only carry {limit} Bridge Eggs at a time",
-                            "limit", String.valueOf(limit)));
+        if (!isLimitExempt(player) && countBridgeEggs(player) + 1 > maxPerPlayer()) {
+            sendLimitMessage(player);
             return;
         }
 
@@ -167,17 +184,78 @@ public class BridgeEggListener implements Listener {
         Map<Material, Integer> blockCounts = matchBridgeRecipe(matrix);
         if (blockCounts == null) return; // grid changed since the result was computed - ignore this click
 
-        if (event.getClick().isShiftClick()) {
-            giveOrDrop(player, createBridgeEgg(blockCounts));
-        } else {
-            ItemStack cursor = event.getView().getCursor();
-            if (cursor != null && !cursor.getType().isAir()) return; // cursor occupied - do nothing, same as vanilla
-
-            event.getView().setCursor(createBridgeEgg(blockCounts));
-        }
+        if (!takeResult(event, player, createBridgeEgg(blockCounts))) return;
 
         consumeIngredients(matrix);
         craftingInventory.setMatrix(matrix);
+    }
+
+    @EventHandler
+    public void onInventoryDrag(InventoryDragEvent event) {
+        if (!(event.getInventory() instanceof CraftingInventory craftingInventory)) return;
+        if (!isBridgeEgg(event.getOldCursor())) return;
+
+        boolean intoGrid = event.getRawSlots().stream()
+                .anyMatch(rawSlot -> event.getView().getInventory(rawSlot) == craftingInventory);
+
+        if (intoGrid) event.setCancelled(true);
+    }
+
+    private boolean wouldPutBridgeEggInGrid(InventoryClickEvent event, Player player, CraftingInventory craftingInventory) {
+        // Shift-clicking a Bridge Egg from the player's inventory targets the crafting grid
+        if (event.getAction() == InventoryAction.MOVE_TO_OTHER_INVENTORY
+                && event.getClickedInventory() instanceof PlayerInventory
+                && isBridgeEgg(event.getCurrentItem())) return true;
+
+        // A direct click on a grid slot while a Bridge Egg is on the cursor places it there
+        if (event.getClickedInventory() == craftingInventory && isBridgeEgg(event.getCursor())) return true;
+
+        // Number-key / offhand swap into a grid slot
+        return event.getClickedInventory() == craftingInventory && isBridgeEgg(swapTarget(event, player));
+    }
+
+    /**
+     * Hands the crafted egg to the player the way the click they used implies. Every click type
+     * has to be spelled out because the result slot is fully manual (see above) - without this,
+     * a number-key or offhand-swap click fell through to the cursor branch and quietly put the
+     * egg on the cursor instead of the hotbar slot the player asked for.
+     *
+     * @return false if the egg couldn't be handed over, so the ingredients stay unconsumed
+     */
+    private boolean takeResult(InventoryClickEvent event, Player player, ItemStack egg) {
+        if (event.getClick().isShiftClick()) {
+            giveOrDrop(player, egg);
+            return true;
+        }
+
+        // Number keys 1-9 - straight into that hotbar slot, like vanilla's instant swap
+        if (event.getClick() == ClickType.NUMBER_KEY) {
+            int button = event.getHotbarButton();
+            if (button < 0) return false;
+
+            ItemStack existing = player.getInventory().getItem(button);
+            if (existing != null && !existing.getType().isAir()) {
+                // Occupied - vanilla can't swap anything back into a result slot, so the closest
+                // sane behaviour is to just put the egg wherever it fits
+                giveOrDrop(player, egg);
+            } else {
+                player.getInventory().setItem(button, egg);
+            }
+            return true;
+        }
+
+        if (event.getClick() == ClickType.SWAP_OFFHAND) {
+            ItemStack offhand = player.getInventory().getItemInOffHand();
+            if (!offhand.getType().isAir()) giveOrDrop(player, egg);
+            else player.getInventory().setItemInOffHand(egg);
+            return true;
+        }
+
+        ItemStack cursor = event.getView().getCursor();
+        if (cursor != null && !cursor.getType().isAir()) return false; // cursor occupied - same as vanilla
+
+        event.getView().setCursor(egg);
+        return true;
     }
 
     private void giveOrDrop(Player player, ItemStack item) {
@@ -213,14 +291,106 @@ public class BridgeEggListener implements Listener {
         return ConfigManager.getInt("bridge-egg.max-per-player", 1);
     }
 
+    // Creative is already an unlimited source of anything - counting eggs there only gets in the
+    // way of building/testing, and there's nothing to hoard past anyway
+    private static boolean isLimitExempt(Player player) {
+        return player.getGameMode() == GameMode.CREATIVE;
+    }
+
+    private static void sendLimitMessage(Player player) {
+        int limit = maxPerPlayer();
+        player.sendMessage(limit == 1
+                ? Messages.msg("bridge-egg.limit-one", "<error>You can only carry one Bridge Egg at a time")
+                : Messages.msg("bridge-egg.limit-many", "<error>You can only carry {limit} Bridge Eggs at a time",
+                        "limit", String.valueOf(limit)));
+    }
+
+    // Closes the two ways a player could otherwise dodge the inventory-count check above: drop a
+    // Bridge Egg on the ground (or have one dropped for them) and pick it back up, or stash one in
+    // a placed container (chest, shulker box, a Trade Chest, etc.) and withdraw it - both would
+    // leave the egg uncounted by countBridgeEggs(player) in between, letting them craft past the
+    // limit and then reclaim everything they stashed.
+
+    @EventHandler
+    public void onPickup(EntityPickupItemEvent event) {
+        if (!(event.getEntity() instanceof Player player)) return;
+        if (isLimitExempt(player)) return;
+
+        int picked = countBridgeEggs(event.getItem().getItemStack());
+        if (picked == 0) return;
+
+        if (countBridgeEggs(player) + picked > maxPerPlayer()) {
+            event.setCancelled(true);
+            // Otherwise this fires (and re-messages) every tick they stand on it
+            event.getItem().setPickupDelay(40);
+            sendLimitMessage(player);
+        }
+    }
+
+    @EventHandler
+    public void onForeignWithdraw(InventoryClickEvent event) {
+        if (event.getInventory() instanceof CraftingInventory) return; // handled by onInventoryClick above
+        if (!(event.getWhoClicked() instanceof Player player)) return;
+        if (isLimitExempt(player)) return;
+
+        Inventory clicked = event.getClickedInventory();
+        if (clicked == null || clicked instanceof PlayerInventory) return; // only foreign inventories
+
+        // Only ever block a net gain. A straight swap (number key onto a hotbar slot that already
+        // holds a Bridge Egg, or swapping one against the cursor) nets zero and has to stay
+        // allowed, or the limit would stop players rearranging eggs they already legitimately own.
+        int gained = bridgeEggsGainedBy(event, player);
+        if (gained <= 0) return;
+
+        if (countBridgeEggs(player) + gained > maxPerPlayer()) {
+            event.setCancelled(true);
+            sendLimitMessage(player);
+        }
+    }
+
+    // How many Bridge Eggs the player would come out of this click holding, over what they hold
+    // now (negative when they're handing some over to the container).
+    private int bridgeEggsGainedBy(InventoryClickEvent event, Player player) {
+        int inSlot = countBridgeEggs(event.getCurrentItem());
+
+        return switch (event.getAction()) {
+            case PICKUP_ALL, PICKUP_SOME, MOVE_TO_OTHER_INVENTORY, COLLECT_TO_CURSOR -> inSlot;
+            case PICKUP_HALF -> (inSlot + 1) / 2;
+            case PICKUP_ONE -> Math.min(1, inSlot);
+            case SWAP_WITH_CURSOR -> inSlot - countBridgeEggs(event.getCursor());
+            case HOTBAR_SWAP, HOTBAR_MOVE_AND_READD -> inSlot - countBridgeEggs(swapTarget(event, player));
+            // PLACE_*, DROP_* and the rest never leave the player holding more than they started
+            // with (anything dropped on the floor still has to get past onPickup)
+            default -> 0;
+        };
+    }
+
+    private @Nullable ItemStack swapTarget(InventoryClickEvent event, Player player) {
+        if (event.getClick() == ClickType.SWAP_OFFHAND) return player.getInventory().getItemInOffHand();
+
+        int button = event.getHotbarButton();
+        return button < 0 ? null : player.getInventory().getItem(button);
+    }
+
     // Anti-hoarding - a limited number of Bridge Eggs per player at a time, counted anywhere in
     // their inventory including inside bundles and carried shulker boxes (otherwise stashing an
     // egg in one was a trivial workaround for the limit). getContents() already includes the
-    // offhand slot.
+    // offhand slot, but NOT the cursor - an egg picked up in the inventory screen and left
+    // hovering there belongs to the player just as much as one sitting in a slot, and leaving it
+    // out let them hold one on the cursor and craft a second.
     private int countBridgeEggs(Player player) {
-        int count = 0;
+        int count = countBridgeEggs(player.getItemOnCursor());
         for (ItemStack item : player.getInventory().getContents())
             count += countBridgeEggs(item);
+
+        // Eggs parked in an open crafting grid (the inventory's own 2x2, or a crafting table) still
+        // belong to the player - counting them closes the "stash one in the grid, craft another"
+        // bypass. The result slot isn't part of getMatrix(), so a freshly-computed result egg isn't
+        // double-counted here.
+        if (player.getOpenInventory().getTopInventory() instanceof CraftingInventory crafting) {
+            for (ItemStack item : crafting.getMatrix())
+                count += countBridgeEggs(item);
+        }
 
         return count;
     }
@@ -259,6 +429,10 @@ public class BridgeEggListener implements Listener {
                 .withLore(ComponentParser.parseRichString(
                         "Throw to bridge " + bridgeLength + " blocks using: " + materialList))
                 .withItemMeta(meta -> {
+                    // Every Bridge Egg carries its own materials/length, so two of them are never
+                    // really interchangeable - stacking would either hide that or merge eggs that
+                    // bridge completely different things
+                    meta.setMaxStackSize(1);
                     meta.getPersistentDataContainer().set(BRIDGE_EGG_KEY, PersistentDataType.BOOLEAN, true);
                     meta.getPersistentDataContainer().set(BRIDGE_MATERIALS_KEY, PersistentDataType.STRING, serializeWeights(blockCounts));
                     meta.getPersistentDataContainer().set(BRIDGE_LENGTH_KEY, PersistentDataType.INTEGER, bridgeLength);
@@ -298,6 +472,8 @@ public class BridgeEggListener implements Listener {
         String serialized = meta.getPersistentDataContainer().get(BRIDGE_MATERIALS_KEY, PersistentDataType.STRING);
         Integer length = meta.getPersistentDataContainer().get(BRIDGE_LENGTH_KEY, PersistentDataType.INTEGER);
         if (serialized == null || length == null) return;
+
+        AchievementManager.award(player, Achievement.MIND_THE_GAP);
 
         egg.getPersistentDataContainer().set(BRIDGE_EGG_KEY, PersistentDataType.BOOLEAN, true);
         // A normal thrown egg arcs down from gravity and hits the ground within a handful of
