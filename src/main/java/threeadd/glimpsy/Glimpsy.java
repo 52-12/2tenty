@@ -63,6 +63,7 @@ public final class Glimpsy extends JavaPlugin {
         ConfigManager.load();
         Messages.load();
         PacketEvents.getAPI().init();
+        PacketEvents.getAPI().getEventManager().registerListener(new threeadd.glimpsy.feature.simple.FishingSoundFilter());
 
         if (!connectDataBase()) // If connecting failed, stop plugin from enabling
             return;
