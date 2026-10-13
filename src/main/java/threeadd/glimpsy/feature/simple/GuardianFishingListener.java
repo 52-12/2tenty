@@ -167,7 +167,7 @@ public class GuardianFishingListener implements Listener {
 
         playersWithActiveGuardian.add(player.getUniqueId());
 
-        location.getWorld().playSound(location, Sound.ENTITY_GUARDIAN_AMBIENT, 1.0F, elder ? 0.6F : 1.0F);
+        FishingSounds.playCatch(location, Sound.ENTITY_GUARDIAN_AMBIENT, 1.0F, elder ? 0.6F : 1.0F, player);
         location.getWorld().spawnParticle(Particle.BUBBLE_POP, location, 20, 0.3, 0.3, 0.3);
 
         player.sendMessage(ComponentParser.parseRichString(
