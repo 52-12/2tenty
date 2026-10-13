@@ -1,6 +1,7 @@
 package threeadd.glimpsy.feature.antifilter;
 
 import org.bukkit.Material;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.entity.EntityPickupItemEvent;
@@ -9,25 +10,40 @@ import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.Damageable;
+import org.bukkit.inventory.meta.EnchantmentStorageMeta;
+import org.bukkit.inventory.meta.Repairable;
 import threeadd.glimpsy.util.config.ConfigManager;
 import threeadd.glimpsy.util.manager.ListeningManager;
 
+import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Per-player anti-drop / anti-pickup filter. Each filter is a set of protected materials, shown
- * in a menu of display-only marker copies (see {@link AntiFilterInventory}). While a material is
- * protected, that player can't manually drop (anti-drop) or auto-pick-up (anti-pickup) items of
- * that type. The menu never holds or hands out real items - placing one just copies its type in.
+ * Per-player anti-drop / anti-pickup filter. Each protected entry is a whole item sample, but the
+ * two filters match differently:
+ * <ul>
+ *     <li><b>Anti-drop</b> matches a sample's <b>identity</b>: same material plus the same
+ *         customisation (display name, lore, custom data, trim, ...), but ignoring the bits that
+ *         change just from using or improving the item - durability, enchantments, stored
+ *         enchants and anvil repair cost. So a registered tool keeps its protection after it's
+ *         been worn down or re-enchanted, and a plain sample effectively covers its whole
+ *         material.</li>
+ *     <li><b>Anti-pickup</b> is always by <b>material</b> - any sample of a material stops all
+ *         items of that material being picked up, enchanted or not.</li>
+ * </ul>
+ * The menu only ever holds display copies; the player keeps their real items (see
+ * {@link AntiFilterInventory}).
  */
 public class AntiFilterManager extends ListeningManager {
 
-    private static final Map<UUID, Map<AntiFilterType, Set<Material>>> filters = new ConcurrentHashMap<>();
+    private static final Map<UUID, Map<AntiFilterType, FilterSet>> filters = new ConcurrentHashMap<>();
 
     private static boolean enabled() {
         return ConfigManager.getBoolean("anti-filter.enabled", true);
@@ -39,25 +55,31 @@ public class AntiFilterManager extends ListeningManager {
 
     @Override
     public void onEnable() {
-        filters.putAll(AntiFilterRepository.getInstance().loadAllSync());
+        AntiFilterRepository.getInstance().loadAllSync().forEach((id, byType) ->
+                byType.forEach((type, samples) ->
+                        filters.computeIfAbsent(id, x -> new EnumMap<>(AntiFilterType.class))
+                                .put(type, new FilterSet(samples))));
     }
 
     public static void open(Player player, AntiFilterType type) {
         AntiFilterInventory gui = new AntiFilterInventory(player.getUniqueId(), type);
-        gui.render(getSet(player.getUniqueId(), type));
+        gui.render(getSet(player.getUniqueId(), type).samples);
         player.openInventory(gui.getInventory());
     }
 
-    private static Set<Material> getSet(UUID playerId, AntiFilterType type) {
+    private static FilterSet getSet(UUID playerId, AntiFilterType type) {
         return filters.computeIfAbsent(playerId, x -> new EnumMap<>(AntiFilterType.class))
-                .computeIfAbsent(type, x -> new HashSet<>());
+                .computeIfAbsent(type, x -> new FilterSet(new ArrayList<>()));
     }
 
-    private static boolean isProtected(UUID playerId, AntiFilterType type, Material material) {
-        Map<AntiFilterType, Set<Material>> byType = filters.get(playerId);
+    private static boolean isProtected(UUID playerId, AntiFilterType type, ItemStack item) {
+        Map<AntiFilterType, FilterSet> byType = filters.get(playerId);
         if (byType == null) return false;
-        Set<Material> set = byType.get(type);
-        return set != null && set.contains(material);
+        FilterSet set = byType.get(type);
+        if (set == null) return false;
+
+        // Anti-drop matches enchanted items specifically; anti-pickup always matches by material.
+        return type == AntiFilterType.DROP ? set.matchesSpecific(item) : set.matchesByMaterial(item);
     }
 
     @EventHandler
@@ -67,30 +89,25 @@ public class AntiFilterManager extends ListeningManager {
         event.setCancelled(true); // this is a menu - no real item ever moves
         if (!(event.getWhoClicked() instanceof Player player)) return;
 
-        Set<Material> set = getSet(gui.getOwner(), gui.getType());
-        boolean changed = false;
+        FilterSet set = getSet(gui.getOwner(), gui.getType());
+        boolean changed;
 
         if (event.getClickedInventory() == event.getInventory()) {
-            // A click in the menu: on a marker removes that type; with an item on the cursor adds it
+            // A click in the menu: on a marker removes that sample; with an item on the cursor adds it
             ItemStack marker = event.getCurrentItem();
-            ItemStack cursor = event.getCursor();
-
             if (marker != null && !marker.getType().isAir()) {
-                changed = set.remove(marker.getType());
-            } else if (cursor != null && !cursor.getType().isAir() && cursor.getType().isItem()) {
-                changed = set.add(cursor.getType());
+                changed = set.remove(gui.sampleAt(event.getSlot()));
+            } else {
+                changed = set.add(event.getCursor());
             }
         } else {
-            // A click on any item in the player's own inventory adds its type (no shift needed).
-            // Everything's cancelled, so the item never actually moves.
-            ItemStack clicked = event.getCurrentItem();
-            if (clicked != null && !clicked.getType().isAir() && clicked.getType().isItem())
-                changed = set.add(clicked.getType());
+            // A click on any item in the player's own inventory adds it (no shift needed)
+            changed = set.add(event.getCurrentItem());
         }
 
         if (changed) {
-            AntiFilterRepository.getInstance().runAsyncSave(gui.getOwner(), gui.getType(), set);
-            gui.render(set);
+            AntiFilterRepository.getInstance().runAsyncSave(gui.getOwner(), gui.getType(), set.samples);
+            gui.render(set.samples);
         }
     }
 
@@ -106,7 +123,7 @@ public class AntiFilterManager extends ListeningManager {
 
         Player player = event.getPlayer();
         ItemStack stack = event.getItemDrop().getItemStack();
-        if (!isProtected(player.getUniqueId(), AntiFilterType.DROP, stack.getType())) return;
+        if (!isProtected(player.getUniqueId(), AntiFilterType.DROP, stack)) return;
 
         // Prevent the drop by despawning the dropped entity and putting the stack straight back
         // into the inventory (rather than cancelling, which can lose the item if a pickup fills
@@ -139,8 +156,84 @@ public class AntiFilterManager extends ListeningManager {
         if (!enabled()) return;
         if (!(event.getEntity() instanceof Player player)) return;
 
-        if (isProtected(player.getUniqueId(), AntiFilterType.PICKUP,
-                event.getItem().getItemStack().getType()))
+        if (isProtected(player.getUniqueId(), AntiFilterType.PICKUP, event.getItem().getItemStack()))
             event.setCancelled(true);
+    }
+
+    /**
+     * A player's protected samples for one filter type. Anti-pickup uses the material set; anti-drop
+     * compares against pre-normalised copies (see {@link #normalizeForDrop}).
+     */
+    private static final class FilterSet {
+
+        final List<ItemStack> samples;
+        private final Set<Material> allMaterials = new HashSet<>();            // any sample's material (pickup)
+        private final List<ItemStack> normalizedSamples = new ArrayList<>();   // identity copies (drop)
+
+        FilterSet(List<ItemStack> samples) {
+            this.samples = samples;
+            recompute();
+        }
+
+        // Anti-drop: same material and same normalised identity (name/lore/custom data/etc.).
+        boolean matchesSpecific(ItemStack item) {
+            if (item == null || !allMaterials.contains(item.getType())) return false;
+
+            ItemStack normalizedItem = normalizeForDrop(item);
+            for (ItemStack sample : normalizedSamples)
+                if (sample.isSimilar(normalizedItem)) return true;
+            return false;
+        }
+
+        // Anti-pickup: any sample of a material matches every item of that material.
+        boolean matchesByMaterial(ItemStack item) {
+            return item != null && allMaterials.contains(item.getType());
+        }
+
+        boolean add(ItemStack item) {
+            if (item == null || item.getType().isAir() || !item.getType().isItem()) return false;
+
+            ItemStack sample = item.clone();
+            sample.setAmount(1);
+            if (samples.stream().anyMatch(existing -> existing.isSimilar(sample))) return false; // already there
+
+            samples.add(sample);
+            recompute();
+            return true;
+        }
+
+        boolean remove(ItemStack sample) {
+            if (sample == null || !samples.remove(sample)) return false;
+            recompute();
+            return true;
+        }
+
+        private void recompute() {
+            allMaterials.clear();
+            normalizedSamples.clear();
+            for (ItemStack sample : samples) {
+                allMaterials.add(sample.getType());
+                normalizedSamples.add(normalizeForDrop(sample));
+            }
+        }
+
+        // The "identity" of an item for anti-drop purposes: everything that says what the item is,
+        // with the mutable wear/improvement state stripped out. Neutralising those on both sides
+        // before isSimilar is what stops a durability change or an added enchantment from ending
+        // the protection (issue #11).
+        private static ItemStack normalizeForDrop(ItemStack item) {
+            ItemStack copy = item.clone();
+            copy.setAmount(1);
+            copy.editMeta(meta -> {
+                meta.removeEnchantments();
+                if (meta instanceof Damageable damageable) damageable.setDamage(0);
+                if (meta instanceof EnchantmentStorageMeta storage) {
+                    for (Enchantment enchantment : new ArrayList<>(storage.getStoredEnchants().keySet()))
+                        storage.removeStoredEnchant(enchantment);
+                }
+                if (meta instanceof Repairable repairable) repairable.setRepairCost(0);
+            });
+            return copy;
+        }
     }
 }
