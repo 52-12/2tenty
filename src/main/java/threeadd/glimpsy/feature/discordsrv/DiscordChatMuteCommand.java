@@ -19,15 +19,16 @@ public class DiscordChatMuteCommand extends CustomCommand {
         boolean newState = !DiscordChatMuteManager.isMuted(player);
         DiscordChatMuteManager.setMuted(player, newState);
 
-        player.sendMessage(ComponentParser.parseRichString(
-                "Discord chat messages are now " + (newState ? "<red>muted" : "<green>unmuted") + " for you"));
+        player.sendMessage(ComponentParser.parseRichString(newState
+                ? "<red>Discord chat muted - you won't see Discord messages here, and your chat won't be sent to Discord"
+                : "<green>Discord chat unmuted - Discord messages show here and your chat goes to Discord again"));
 
         return SUCCESS;
     }
 
     @Override
     public Component createUsage() {
-        return ComponentParser.parseRichString("Toggle whether you want to see chat messages relayed from Discord");
+        return ComponentParser.parseRichString("Toggle Discord chat both ways for yourself: hide Discord messages here, and stop your own messages being sent to Discord");
     }
 
     @Override
