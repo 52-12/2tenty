@@ -175,6 +175,7 @@ public class GuardianFishingListener implements Listener {
 
         FishingSounds.playCatch(location, Sound.ENTITY_GUARDIAN_AMBIENT, 1.0F, elder ? 0.6F : 1.0F, player);
         location.getWorld().spawnParticle(Particle.BUBBLE_POP, location, 20, 0.3, 0.3, 0.3);
+        FishingSounds.playCatch(location, Sound.ENTITY_FISHING_BOBBER_RETRIEVE, 1.0F, 1.0F, player); // pull like a normal catch
 
         player.sendMessage(ComponentParser.parseRichString(
                 elder ? "Something ancient stirs beneath the surface..." : "You feel eyes watching from below..."));
