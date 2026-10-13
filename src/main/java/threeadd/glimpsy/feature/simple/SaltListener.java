@@ -6,7 +6,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.Furnace;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.inventory.FurnaceSmeltEvent;
+import org.bukkit.event.inventory.FurnaceStartSmeltEvent;
 import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
@@ -40,30 +40,40 @@ public class SaltListener implements Listener {
 
     // Water bucket -> Salt. A vanilla furnace recipe can't declare a container that's left behind,
     // and the old furnace-extract refund only fired when a player pulled the salt out by hand, so
-    // hoppers / offline smelting silently lost the bucket. Instead the empty bucket goes straight
-    // back into the furnace's top (input) slot the moment the water bucket is consumed.
+    // hoppers / offline smelting silently lost the bucket. Instead the empty bucket is put into the
+    // furnace's top (input) slot once the water bucket has been consumed.
     @EventHandler
-    public void onSmelt(FurnaceSmeltEvent event) {
+    public void onStartSmelt(FurnaceStartSmeltEvent event) {
         if (event.getSource().getType() != Material.WATER_BUCKET) return;
 
+        // Scheduled for when this smelt finishes, not for "now": FurnaceSmeltEvent fires around the
+        // point the input is consumed, so a 1-tick check could still see the water bucket and give
+        // up. getTotalCookTime() tells us exactly how long to wait.
         Block block = event.getBlock();
+        ScheduleUtil.scheduleSync(() -> placeEmptyBucket(block, 0), event.getTotalCookTime() + 1, ScheduleUtil.Unit.TICK);
+    }
 
-        // One tick later: by then vanilla has removed the water bucket from the input slot and added
-        // the salt to the output, so there's somewhere to put the bucket back.
-        ScheduleUtil.scheduleSync(() -> {
-            if (block.getType() != Material.FURNACE) return;
+    private static void placeEmptyBucket(Block block, int attempt) {
+        if (block.getType() != Material.FURNACE) return;
 
-            Furnace furnace = (Furnace) block.getState();
-            ItemStack input = furnace.getInventory().getSmelting();
-            if (input == null || input.getType().isAir()) {
-                furnace.getInventory().setSmelting(new ItemStack(Material.BUCKET));
-                furnace.update(true);
-                return;
-            }
+        Furnace furnace = (Furnace) block.getState();
+        ItemStack input = furnace.getInventory().getSmelting();
 
-            // The slot was refilled in the meantime (e.g. a hopper feeding water buckets) - don't
-            // overwrite whatever's there, just drop the empty bucket so it isn't lost.
-            block.getWorld().dropItemNaturally(block.getLocation().add(0.5, 1.0, 0.5), new ItemStack(Material.BUCKET));
-        }, 1, ScheduleUtil.Unit.TICK);
+        if (input == null || input.getType().isAir()) {
+            furnace.getInventory().setSmelting(new ItemStack(Material.BUCKET));
+            furnace.update(true);
+            return;
+        }
+
+        // Water bucket still sitting there (timing drift) - wait a moment and look again.
+        if (input.getType() == Material.WATER_BUCKET) {
+            if (attempt < 10)
+                ScheduleUtil.scheduleSync(() -> placeEmptyBucket(block, attempt + 1), 2, ScheduleUtil.Unit.TICK);
+
+            return; // still smelting (or it stalled) - don't hand out a bucket for a smelt that hasn't happened
+        }
+
+        // Something else refilled the slot - drop the empty bucket on top so it isn't lost.
+        block.getWorld().dropItemNaturally(block.getLocation().add(0.5, 1.0, 0.5), new ItemStack(Material.BUCKET));
     }
 }
