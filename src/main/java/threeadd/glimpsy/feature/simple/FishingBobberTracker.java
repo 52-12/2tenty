@@ -1,6 +1,7 @@
 package threeadd.glimpsy.feature.simple;
 
 import org.bukkit.entity.FishHook;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerFishEvent;
@@ -32,7 +33,10 @@ public class FishingBobberTracker implements Listener {
 
         switch (event.getState()) {
             case FISHING -> hooks.put(id, event.getHook());
-            case CAUGHT_FISH, CAUGHT_ENTITY, REEL_IN, FAILED_ATTEMPT -> hooks.remove(id);
+            case CAUGHT_ENTITY -> {
+                if (event.getCaught() instanceof Player caught) FishingSounds.markHooked(caught);
+            }
+            case CAUGHT_FISH, REEL_IN, FAILED_ATTEMPT -> hooks.remove(id);
             default -> {
             }
         }

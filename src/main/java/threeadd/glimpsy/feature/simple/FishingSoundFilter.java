@@ -30,7 +30,7 @@ public class FishingSoundFilter extends PacketListenerAbstract {
     private static final String ENTITY_PREFIX = "minecraft:entity.";
     private static final String SPLASH_SUFFIX = ".splash";
 
-    private static final double OWN_SOUND_RADIUS_SQUARED = 4.0; // 2 blocks
+    private static final double OWN_SOUND_RADIUS_SQUARED = 1.0; // 1 block - bobber sounds are at the bobber
     private static final double OWN_XP_RADIUS_SQUARED = 2.25;   // 1.5 blocks - own XP is at your feet
 
     @Override
@@ -65,13 +65,17 @@ public class FishingSoundFilter extends PacketListenerAbstract {
             boolean splashSound = key.startsWith(ENTITY_PREFIX) && key.endsWith(SPLASH_SUFFIX);
             if (!bobberSound && !splashSound) return;
 
-            // The cast sound is played at the caster, so match it by the player. Everything else
-            // (splash, reel) is matched by the player's OWN bobber - never by mere proximity to the
-            // player, or a neighbour's rod would count as yours.
+            // You're the one a rod is hauling in - keep the sounds of that.
+            if (FishingSounds.wasRecentlyHooked(uuid)) return;
+
+            // The cast sound is played at the caster, so match it at the player.
             if (key.equals(THROW_KEY) && isNear(player.getLocation(), position)) return;
 
+            // Otherwise match by the player's OWN bobber (live or just reeled) - never by proximity
+            // to the player, or a neighbour's rod would count as yours.
             Location ownBobber = FishingSounds.getOwnBobber(uuid);
-            if (ownBobber != null && isNear(ownBobber, position)) return;
+            if (ownBobber != null && (isNear(ownBobber, position) || isNear(player.getLocation(), position)))
+                return;
 
             // Others' bobber sounds always go; a generic splash variant only if it's actually at a
             // bobber, so unrelated water splashes (boats, players) still play.
