@@ -53,17 +53,13 @@ anvil:
     # enchanted_book: 3
 
 bamboo:
-  # Extra growth ticks aimed only at bamboo, on top of the world's normal randomTickSpeed
-  # gamerule (which speeds up every crop/sapling/leaf and can't target just one block type).
-  # This many random positions per loaded chunk are sampled each game tick, and only bamboo
-  # found at one grows. Note this is a whole-column sample, unlike vanilla's random ticks
-  # (3 per 16x16x16 section), so start low and raise it until growth feels right.
-  # 0 = disabled, no extra growth.
-  extra-random-ticks: 0
-  # Cap on how many positions are sampled per tick across all chunks. Chunks are visited a few at
-  # a time on a rotating cursor, so a large extra-random-ticks value spreads over ticks instead of
-  # costing the whole server every tick. Raise this for faster bamboo growth (more CPU).
-  max-samples-per-tick: 2000
+  # Speeds bamboo growth without touching any other crop/plant. Bamboo positions are tracked, so
+  # growth is proportional to how much bamboo you actually have instead of sampling random blocks.
+  # How many tracked bamboo blocks are force-grown per tick. 0 = disabled. Raise for faster growth.
+  growths-per-tick: 50
+  # How many already-loaded chunks are scanned per tick to discover pre-existing bamboo (each chunk
+  # is only scanned once). Lower this if chunk-load scans ever cause a hitch.
+  scan-chunks-per-tick: 2
 
 stats:
   top-list-size: 10
