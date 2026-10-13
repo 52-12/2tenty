@@ -26,6 +26,7 @@ public class FishingSoundFilter extends PacketListenerAbstract {
 
     private static final String FISHING_BOBBER_PREFIX = "minecraft:entity.fishing_bobber";
     private static final String THROW_KEY = "minecraft:entity.fishing_bobber.throw";
+    private static final String RETRIEVE_KEY = "minecraft:entity.fishing_bobber.retrieve";
     private static final String EXPERIENCE_PICKUP_KEY = "minecraft:entity.experience_orb.pickup";
     private static final String ENTITY_PREFIX = "minecraft:entity.";
     private static final String SPLASH_SUFFIX = ".splash";
@@ -61,11 +62,17 @@ public class FishingSoundFilter extends PacketListenerAbstract {
                 return;
             }
 
+            // Any reel is inaudible while muted, whoever/wherever it is.
+            if (key.equals(RETRIEVE_KEY)) {
+                event.setCancelled(true);
+                return;
+            }
+
             boolean bobberSound = key.startsWith(FISHING_BOBBER_PREFIX);
             boolean splashSound = key.startsWith(ENTITY_PREFIX) && key.endsWith(SPLASH_SUFFIX);
             if (!bobberSound && !splashSound) return;
 
-            // You're the one a rod is hauling in - keep the sounds of that.
+            // You're the one a rod is hauling in - keep the rest of that (splash/swim), not the reel.
             if (FishingSounds.wasRecentlyHooked(uuid)) return;
 
             // The cast sound is played at the caster, so match it at the player.
@@ -74,8 +81,7 @@ public class FishingSoundFilter extends PacketListenerAbstract {
             // Otherwise match by the player's OWN bobber (live or just reeled) - never by proximity
             // to the player, or a neighbour's rod would count as yours.
             Location ownBobber = FishingSounds.getOwnBobber(uuid);
-            if (ownBobber != null && (isNear(ownBobber, position) || isNear(player.getLocation(), position)))
-                return;
+            if (ownBobber != null && isNear(ownBobber, position)) return;
 
             // Others' bobber sounds always go; a generic splash variant only if it's actually at a
             // bobber, so unrelated water splashes (boats, players) still play.
@@ -85,6 +91,11 @@ public class FishingSoundFilter extends PacketListenerAbstract {
 
         WrapperPlayServerEntitySoundEffect wrapper = new WrapperPlayServerEntitySoundEffect(event);
         String key = wrapper.getSound().getSoundId().toString();
+
+        if (key.equals(RETRIEVE_KEY)) {
+            event.setCancelled(true);
+            return;
+        }
 
         boolean bobberSound = key.startsWith(FISHING_BOBBER_PREFIX);
         boolean splashSound = key.startsWith(ENTITY_PREFIX) && key.endsWith(SPLASH_SUFFIX);
