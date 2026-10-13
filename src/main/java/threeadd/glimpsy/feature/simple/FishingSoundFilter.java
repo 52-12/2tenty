@@ -25,6 +25,7 @@ import java.util.UUID;
 public class FishingSoundFilter extends PacketListenerAbstract {
 
     private static final String FISHING_BOBBER_PREFIX = "minecraft:entity.fishing_bobber";
+    private static final String THROW_KEY = "minecraft:entity.fishing_bobber.throw";
     private static final String EXPERIENCE_PICKUP_KEY = "minecraft:entity.experience_orb.pickup";
     private static final String ENTITY_PREFIX = "minecraft:entity.";
     private static final String SPLASH_SUFFIX = ".splash";
@@ -64,7 +65,13 @@ public class FishingSoundFilter extends PacketListenerAbstract {
             boolean splashSound = key.startsWith(ENTITY_PREFIX) && key.endsWith(SPLASH_SUFFIX);
             if (!bobberSound && !splashSound) return;
 
-            if (isNearOwnSound(player, uuid, position)) return;
+            // The cast sound is played at the caster, so match it by the player. Everything else
+            // (splash, reel) is matched by the player's OWN bobber - never by mere proximity to the
+            // player, or a neighbour's rod would count as yours.
+            if (key.equals(THROW_KEY) && isNear(player.getLocation(), position)) return;
+
+            Location ownBobber = FishingSounds.getOwnBobber(uuid);
+            if (ownBobber != null && isNear(ownBobber, position)) return;
 
             // Others' bobber sounds always go; a generic splash variant only if it's actually at a
             // bobber, so unrelated water splashes (boats, players) still play.
@@ -83,15 +90,8 @@ public class FishingSoundFilter extends PacketListenerAbstract {
         if (wrapper.getEntityId() != player.getEntityId() && bobberSound) event.setCancelled(true);
     }
 
-    // A positional sound belongs to this player if it's at their own bobber or right on top of them
-    // (vanilla plays the cast sound at the player).
-    private static boolean isNearOwnSound(Player player, UUID uuid, Vector3d position) {
-        if (isNear(player.getLocation(), position)) return true;
-
-        Location ownBobber = FishingSounds.getOwnBobber(uuid);
-        return ownBobber != null && isNear(ownBobber, position);
-    }
-
+    // A positional sound belongs to this player if it's at their own bobber (the cast sound is
+    // handled separately, at the player).
     private static boolean isNearAnyBobber(Vector3d position) {
         for (Location bobber : FishingSounds.getAllBobbers())
             if (isNear(bobber, position)) return true;
