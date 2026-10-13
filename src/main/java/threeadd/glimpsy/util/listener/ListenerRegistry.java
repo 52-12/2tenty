@@ -62,6 +62,7 @@ public class ListenerRegistry extends Registry<Listener> {
                 new CreeperSpawnListener(),
                 new DeepslateExplosionListener(),
                 new BridgeEggListener(),
+                new FishingBobberTracker(),
                 new TNTExplosionRadiusListener(),
                 new TNTExtinguishListener(),
                 new TridentDropListener(),
