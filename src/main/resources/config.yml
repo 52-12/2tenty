@@ -193,6 +193,9 @@ guardian-fishing:
   elder-guardian-chance: 0.15
   trim-template-drop-chance: 0.3
   trimmed-armor-piece-drop-chance: 0.02
+  # Chance (0-1) a fished guardian drops a Telekinesis enchanted book - a fishing-only reward,
+  # for regular and elder guardians alike.
+  telekinesis-book-chance: 0.02
   elder-luck-duration-seconds: 300
   regular-luck-duration-seconds: 120
   # Free-form drop tables for fished guardians, on top of their vanilla drops and the elder-only
