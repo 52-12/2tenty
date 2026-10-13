@@ -110,12 +110,20 @@ public class BambooGrowthManager extends ListeningManager {
         Iterator<Long> cursor = cursors.computeIfAbsent(world, w -> positions.iterator());
         int grown = 0;
 
-        while (grown < budget) {
+        // Hard cap on how many entries we look at per tick. Without this, entries that can't grow
+        // (blocked above, at max height, or in an unloaded chunk) are skipped and the cursor just
+        // wraps onto them again forever - which hung the server.
+        int scanned = 0;
+        int maxScan = Math.max(64, budget * 8);
+
+        while (grown < budget && scanned < maxScan) {
             if (!cursor.hasNext()) {
                 cursor = positions.iterator();
                 cursors.put(world, cursor);
                 if (!cursor.hasNext()) break;
             }
+
+            scanned++;
 
             long key = cursor.next();
             int x = unpackX(key), y = unpackY(key), z = unpackZ(key);
