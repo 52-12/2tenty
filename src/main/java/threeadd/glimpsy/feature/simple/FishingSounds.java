@@ -47,6 +47,11 @@ public final class FishingSounds {
         return ownBobbers.get(uuid);
     }
 
+    /** Every currently-active bobber location, for matching generic splash variants to a bobber. */
+    public static Iterable<Location> getAllBobbers() {
+        return ownBobbers.values();
+    }
+
     public static void playCatch(Location location, Sound sound, float volume, float pitch, Player source) {
         for (Player player : location.getWorld().getPlayers()) {
             if (player.getUniqueId().equals(source.getUniqueId()) || !isMuted(player))
