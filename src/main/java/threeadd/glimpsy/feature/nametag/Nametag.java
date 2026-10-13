@@ -11,6 +11,7 @@ import org.jetbrains.annotations.Nullable;
 import threeadd.glimpsy.feature.nickname.NicknameManager;
 import threeadd.glimpsy.feature.teams.TeamManager;
 import threeadd.glimpsy.util.hologram.Hologram;
+import threeadd.glimpsy.util.text.ComponentParser;
 
 import java.util.Locale;
 
@@ -68,20 +69,24 @@ public class Nametag extends Hologram {
         Component ping = Component.text(player.getPing() + "ms")
                 .color(TextColor.color(0xFFE08F));
 
-        String teamName = TeamManager.getTeamName(player);
-        Component team = teamName == null ? Component.empty() : Component.textOfChildren(
-                Component.text("[", NamedTextColor.GRAY),
-                MiniMessage.miniMessage().deserialize(teamName),
-                Component.text("] ", NamedTextColor.GRAY)
-        );
+        Component team = ComponentParser.teamPrefix(TeamManager.getTeamName(player));
 
-        getRoot().text(Component.textOfChildren(
+        Component text = Component.textOfChildren(
                 team,
                 name,
                 Component.space(),
                 ping
-        ));
+        );
+
+        // Only touch the TextDisplay (and broadcast metadata) when something actually changed -
+        // otherwise this sent a packet per player per second for no reason.
+        if (text.equals(lastText)) return;
+        lastText = text;
+
+        getRoot().text(text);
     }
+
+    private @Nullable Component lastText;
 
     private @Nullable TextDisplay getRoot() {
         if (getLines().isEmpty())

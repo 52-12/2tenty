@@ -2,11 +2,13 @@ package threeadd.glimpsy.util.text;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.ComponentLike;
+import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.Style;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Location;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import threeadd.glimpsy.util.config.ConfigManager;
 
 import java.time.LocalDateTime;
@@ -15,8 +17,22 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ComponentParser {
+
+    // Team names are raw MiniMessage; parsing them per player per second (nametag + tab) added up.
+    // Cached by raw string - a rename just means a new entry.
+    private static final Map<String, Component> TEAM_PREFIX_CACHE = new ConcurrentHashMap<>();
+    private static final Component TEAM_OPEN = Component.text("[", NamedTextColor.GRAY);
+    private static final Component TEAM_CLOSE = Component.text("] ", NamedTextColor.GRAY);
+
+    /** The "[Team] " prefix component for a raw team name, cached; empty when not on a team. */
+    public static Component teamPrefix(@Nullable String rawTeamName) {
+        if (rawTeamName == null) return Component.empty();
+        return TEAM_PREFIX_CACHE.computeIfAbsent(rawTeamName,
+                name -> Component.textOfChildren(TEAM_OPEN, MiniMessage.miniMessage().deserialize(name), TEAM_CLOSE));
+    }
 
     public static Component parseRichString(String rawString) {
         return Component.textOfChildren(

@@ -162,14 +162,8 @@ public class TabManager extends ListeningManager {
                     displayName = NicknameManager.getDisplayName(target.name(), target.uuid());
 
                 String teamName = TeamManager.getTeamName(target.uuid());
-                if (teamName != null) {
-                    displayName = Component.textOfChildren(
-                            Component.text("[", NamedTextColor.GRAY),
-                            MiniMessage.miniMessage().deserialize(teamName),
-                            Component.text("] ", NamedTextColor.GRAY),
-                            displayName
-                    );
-                }
+                if (teamName != null)
+                    displayName = Component.textOfChildren(ComponentParser.teamPrefix(teamName), displayName);
 
                 packetEntries.add(new PlayerInfo(
                         target.profile(),
