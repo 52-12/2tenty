@@ -54,6 +54,7 @@ public class PlayerFishingListener implements Listener {
         event.setCancelled(true);
 
         Location hookLocation = event.getHook().getLocation();
+        FishingSounds.markPlayerPull(hookLocation); // let the sound filter mute this reel-in
         caught.teleport(hookLocation.clone().add(0, 1, 0));
 
         hookLocation.getWorld().spawnParticle(Particle.SPLASH, hookLocation, 30, 0.3, 0.3, 0.3);
