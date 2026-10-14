@@ -11,10 +11,13 @@ import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.Nullable;
+import threeadd.glimpsy.util.ScheduleUtil;
 import threeadd.glimpsy.util.config.ConfigManager;
 import threeadd.glimpsy.util.config.Messages;
 import threeadd.glimpsy.util.manager.ListeningManager;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -27,6 +30,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class HeadCollectionManager extends ListeningManager {
 
     private static final Map<UUID, HeadCollection> collectionsByOwner = new ConcurrentHashMap<>();
+    // The single open editable GUI per owner (the [heads] chat share is a separate, read-only snapshot)
+    private static final Map<UUID, HeadCollectionInventory> openCollections = new ConcurrentHashMap<>();
 
     public static boolean enabled() {
         return ConfigManager.getBoolean("head-collection.enabled", true);
@@ -35,6 +40,11 @@ public class HeadCollectionManager extends ListeningManager {
     @Override
     public void onEnable() {
         collectionsByOwner.putAll(HeadCollectionRepository.getInstance().loadAllSync());
+
+        // A collection used to be written only on close, so a restart/reload with it still open
+        // reloaded the older DB row - resurrecting anything taken out (or dropping anything just put
+        // in). Flush open GUIs on a short timer, and again synchronously in disable().
+        ScheduleUtil.scheduleSync(HeadCollectionManager::persistOpenCollections, 10, 10, ScheduleUtil.Unit.TICK);
     }
 
     /** Every head-shaped item, not just player heads - a collection wants the mob skulls too. */
@@ -58,7 +68,16 @@ public class HeadCollectionManager extends ListeningManager {
 
     public static void open(Player player) {
         HeadCollection collection = getOrCreate(player.getUniqueId());
-        player.openInventory(new HeadCollectionInventory(collection, player.getName()).getInventory());
+
+        // Reuse the GUI that's already open while the owner is still looking at it, otherwise build
+        // a fresh one from the stored contents
+        HeadCollectionInventory gui = openCollections.get(player.getUniqueId());
+        if (gui == null || gui.getInventory().getViewers().isEmpty()) {
+            gui = new HeadCollectionInventory(collection, player.getName());
+            openCollections.put(player.getUniqueId(), gui);
+        }
+
+        player.openInventory(gui.getInventory());
     }
 
     // Slot rules - only heads may enter, taking things back out is never restricted
@@ -141,8 +160,50 @@ public class HeadCollectionManager extends ListeningManager {
         if (!(event.getInventory().getHolder() instanceof HeadCollectionInventory inventory)) return;
         if (!inventory.isEditable()) return; // a shared snapshot - never written back
 
-        HeadCollection collection = getOrCreate(inventory.getOwner());
-        collection.setContents(inventory.readContents());
+        persistCollection(inventory);
+        dropOpenCollection(inventory);
+    }
+
+    // Keeps every open collection's stored copy in step with its GUI, instead of only updating it at
+    // close. Bounded by the timer interval, so an unforeseen exit costs at most that much.
+    private static void persistOpenCollections() {
+        for (HeadCollectionInventory gui : openCollections.values()) {
+            if (gui.getInventory().getViewers().isEmpty()) continue;
+            persistCollection(gui);
+        }
+    }
+
+    private static void persistCollection(HeadCollectionInventory gui) {
+        if (!gui.isEditable()) return;
+
+        HeadCollection collection = getOrCreate(gui.getOwner());
+        ItemStack[] contents = gui.readContents();
+        if (Arrays.equals(collection.getContents(), contents)) return;
+
+        collection.setContents(contents);
         HeadCollectionRepository.getInstance().runAsyncSave(collection);
+    }
+
+    private static void dropOpenCollection(HeadCollectionInventory gui) {
+        // Deferred a tick - the closing viewer is still counted as a viewer during this event
+        ScheduleUtil.scheduleSync(() -> {
+            if (gui.getInventory().getViewers().isEmpty())
+                openCollections.remove(gui.getOwner(), gui);
+        }, 1, ScheduleUtil.Unit.TICK);
+    }
+
+    // Flush synchronously on shutdown/reload - async saves queued during a stop may never run.
+    @Override
+    public void disable() {
+        if (openCollections.isEmpty()) return;
+
+        for (HeadCollectionInventory gui : new ArrayList<>(openCollections.values())) {
+            if (!gui.isEditable()) continue;
+
+            HeadCollection collection = getOrCreate(gui.getOwner());
+            collection.setContents(gui.readContents());
+            HeadCollectionRepository.getInstance().saveSync(collection);
+        }
+        openCollections.clear();
     }
 }
