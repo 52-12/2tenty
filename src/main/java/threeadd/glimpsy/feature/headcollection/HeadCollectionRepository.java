@@ -66,9 +66,13 @@ public class HeadCollectionRepository extends Repository<HeadCollection> {
         return collections;
     }
 
-    public void runAsyncSave(HeadCollection collection) {
-        runAsync(() -> executeUpdate("REPLACE INTO head_collections (owner, contents) VALUES (?, ?)",
+    public void saveSync(HeadCollection collection) {
+        executeUpdate("REPLACE INTO head_collections (owner, contents) VALUES (?, ?)",
                 collection.getOwner().toString(),
-                serializeContents(collection.getContents())));
+                serializeContents(collection.getContents()));
+    }
+
+    public void runAsyncSave(HeadCollection collection) {
+        runAsync(() -> saveSync(collection));
     }
 }

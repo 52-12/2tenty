@@ -67,6 +67,12 @@ public class TradeChestManager extends ListeningManager {
         deliveries.addAll(TradeChestRepository.getInstance().loadDeliveriesSync());
 
         ScheduleUtil.scheduleSync(TradeChestManager::deliveryTick, 10, 10, ScheduleUtil.Unit.SECOND);
+
+        // Chest contents are edited live in a GUI but were only ever persisted on close - so a
+        // crash, or a shutdown/reload while a GUI was still open, reloaded the chest from an older
+        // snapshot and resurrected anything the player had already taken (or dropped anything they
+        // had just put in). Flush every open GUI periodically, and again synchronously in disable().
+        ScheduleUtil.scheduleSync(TradeChestManager::persistOpenChests, 10, 10, ScheduleUtil.Unit.TICK);
     }
 
     // The chest owner themself, or anyone on their team, can use the chest and act in trades
@@ -197,6 +203,13 @@ public class TradeChestManager extends ListeningManager {
         chestsByOwner.remove(data.getOwner());
         if (deleteFromDatabase) TradeChestRepository.getInstance().runAsyncDeleteChest(data.getOwner());
 
+        // Close anyone still looking at the now-gone chest. Their close handler finds no data (the
+        // chest was just removed) and simply drops the shared GUI without saving it back.
+        TradeChestInventory open = openChests.remove(data.getOwner());
+        if (open != null)
+            for (HumanEntity viewer : new ArrayList<>(open.getInventory().getViewers()))
+                viewer.closeInventory();
+
         TradeOffer offer = offersByPlayer.get(data.getOwner());
         if (offer != null) cancelOffer(offer, "trade-chest.cancelled-broken", "The trade was cancelled - a Trade Chest was broken");
     }
@@ -227,7 +240,7 @@ public class TradeChestManager extends ListeningManager {
         TradeOffer offer = offersByPlayer.get(data.getOwner());
         if (offer != null && offer.getStage() == TradeOffer.Stage.REVIEW && openPreview(player, offer)) return;
 
-        player.openInventory(new TradeChestInventory(data).getInventory());
+        player.openInventory(openChestInventory(data).getInventory());
     }
 
     private static @Nullable TradeChestData getChestAt(Block block) {
@@ -317,13 +330,17 @@ public class TradeChestManager extends ListeningManager {
         if (!(event.getInventory().getHolder() instanceof TradeChestInventory chestInventory)) return;
 
         TradeChestData data = chestsByOwner.get(chestInventory.getOwner());
-        if (data == null) return; // chest was broken while the GUI was open
+        if (data == null) { // chest was broken while the GUI was open
+            dropOpenChest(chestInventory);
+            return;
+        }
 
         ItemStack[] newContents = chestInventory.readContents();
         boolean changed = !Arrays.equals(data.getContents(), newContents);
 
         data.setContents(newContents);
         TradeChestRepository.getInstance().runAsyncSaveChest(data);
+        dropOpenChest(chestInventory);
 
         if (!changed) return;
 
@@ -619,7 +636,7 @@ public class TradeChestManager extends ListeningManager {
 
         // A tick later - opening an inventory from inside the click event that's still being
         // processed leaves the client's view out of sync with the server's
-        ScheduleUtil.scheduleSync(() -> player.openInventory(new TradeChestInventory(data).getInventory()),
+        ScheduleUtil.scheduleSync(() -> player.openInventory(openChestInventory(data).getInventory()),
                 1, ScheduleUtil.Unit.TICK);
     }
 
@@ -859,32 +876,51 @@ public class TradeChestManager extends ListeningManager {
                 UUID side = viewer instanceof Player player ? actingSide(player, offer) : null;
                 TradeChestData chest = side == null ? null : chestsByOwner.get(side);
 
-                if (chest != null) viewer.openInventory(new TradeChestInventory(chest).getInventory());
+                if (chest != null) viewer.openInventory(openChestInventory(chest).getInventory());
                 else viewer.closeInventory();
             }
             offer.setPreview(null);
         }, 1, ScheduleUtil.Unit.TICK);
     }
 
-    // Teammates share a chest, so more than one GUI for the same owner can be open at once
-    private static List<TradeChestInventory> openChestGuis(UUID owner) {
-        List<TradeChestInventory> open = new ArrayList<>();
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            if (player.getOpenInventory().getTopInventory().getHolder() instanceof TradeChestInventory chestInventory
-                    && chestInventory.getOwner().equals(owner))
-                open.add(chestInventory);
-        }
-        return open;
+    // Exactly one live GUI instance per chest, shared by every viewer. Opening a chest that is
+    // already open hands out the *same* inventory instead of building a second snapshot - a second
+    // snapshot was a dupe: two independent copies of every stack, so two players could each take the
+    // same item, and whichever of them closed last wrote their copy straight back into the chest.
+    private static final Map<UUID, TradeChestInventory> openChests = new ConcurrentHashMap<>();
+
+    private static TradeChestInventory openChestInventory(TradeChestData data) {
+        // Reuse the live GUI only while someone is actually looking at it. Otherwise build a fresh
+        // one from the current data - a cached instance with no viewers can be stale (a delivery or
+        // trade may have changed the data since it was built), and handing that out would show -
+        // and then save back on close - out-of-date contents.
+        TradeChestInventory existing = openChests.get(data.getOwner());
+        if (existing != null && !existing.getInventory().getViewers().isEmpty())
+            return existing;
+
+        TradeChestInventory fresh = new TradeChestInventory(data);
+        openChests.put(data.getOwner(), fresh);
+        return fresh;
     }
 
+    /** The shared GUI for this chest, or null if nobody currently has it open. */
     private static @Nullable TradeChestInventory findOpenChestGui(UUID owner) {
-        List<TradeChestInventory> open = openChestGuis(owner);
-        return open.isEmpty() ? null : open.getFirst();
+        TradeChestInventory gui = openChests.get(owner);
+        return gui != null && !gui.getInventory().getViewers().isEmpty() ? gui : null;
+    }
+
+    /** Drops the shared GUI once its last viewer is gone, so the next open rebuilds from saved data. */
+    private static void dropOpenChest(TradeChestInventory gui) {
+        // Deferred a tick - the closing viewer is still counted as a viewer during this event
+        ScheduleUtil.scheduleSync(() -> {
+            if (gui.getInventory().getViewers().isEmpty())
+                openChests.remove(gui.getOwner(), gui);
+        }, 1, ScheduleUtil.Unit.TICK);
     }
 
     private static void pushToOpenGuis(UUID owner, TradeChestData data) {
-        for (TradeChestInventory gui : openChestGuis(owner))
-            pushContents(gui, data);
+        TradeChestInventory gui = findOpenChestGui(owner);
+        if (gui != null) pushContents(gui, data);
     }
 
     // Writes the stored contents into the open GUI - only safe right after the GUI's own live
@@ -897,8 +933,45 @@ public class TradeChestManager extends ListeningManager {
 
     // Only re-renders the button slots - item slots are the player's live editing surface
     private static void refreshOpenChests(UUID owner) {
-        for (TradeChestInventory gui : openChestGuis(owner))
-            gui.refreshButtons();
+        TradeChestInventory gui = findOpenChestGui(owner);
+        if (gui != null) gui.refreshButtons();
+    }
+
+    // Writes every open GUI's live contents back into its stored data. Runs on a short timer so an
+    // unforeseen exit only ever costs the last fraction of a second, and the stored copy tracks the
+    // GUI the whole time it's open instead of only at close.
+    private static void persistOpenChests() {
+        for (TradeChestInventory gui : openChests.values()) {
+            if (gui.getInventory().getViewers().isEmpty()) continue;
+            persistChest(gui);
+        }
+    }
+
+    private static void persistChest(TradeChestInventory gui) {
+        TradeChestData data = chestsByOwner.get(gui.getOwner());
+        if (data == null) return; // chest was broken
+
+        ItemStack[] contents = gui.readContents();
+        if (Arrays.equals(data.getContents(), contents)) return;
+
+        data.setContents(contents);
+        TradeChestRepository.getInstance().runAsyncSaveChest(data);
+    }
+
+    // Flush synchronously on shutdown/reload - async saves queued during a stop may never run, which
+    // is exactly the window that let an open GUI's "take" be lost and the item reappear.
+    @Override
+    public void disable() {
+        if (openChests.isEmpty()) return;
+
+        for (TradeChestInventory gui : new ArrayList<>(openChests.values())) {
+            TradeChestData data = chestsByOwner.get(gui.getOwner());
+            if (data == null) continue;
+
+            data.setContents(gui.readContents());
+            TradeChestRepository.getInstance().saveChestSync(data);
+        }
+        openChests.clear();
     }
 
     private static String nameOf(UUID id) {
